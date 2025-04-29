@@ -1,16 +1,27 @@
 // src/pages/TakePhotos.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import { useGlobalState } from '../context/GlobalStateContext';
 import CameraView from '../components/CameraView';
 import PreviewImage from '../components/PreviewImage';
-import OverlaySelector from '../components/OverlaySelector';
 
 export default function TakePhotos() {
-  const [capturedImages, setCapturedImages] = useState([]); // Store all captured images
+  const { clubData, setClubData } = useGlobalState();
   const [currentStep, setCurrentStep] = useState(1); // Track the current step
-  const [selectedOverlay, setSelectedOverlay] = useState(null);
+  const [useOverlay, setUseOverlay] = useState(true); // Toggle for overlay usage
   const [capturedImage, setCapturedImage] = useState(null);
-  const navigate = useNavigate(); // Initialize navigate
+  const navigate = useNavigate();
+
+  const overlayImages = [
+    '/src/assets/wedge1.webp',
+    '/src/assets/wedge2.webp',
+    '/src/assets/wedge3.webp',
+    '/src/assets/wedge4.webp',
+    '/src/assets/wedge5.webp',
+    '/src/assets/wedge6.webp',
+    '/src/assets/wedge7.webp',
+    '/src/assets/wedge8.webp',
+  ];
 
   const handleCapture = (img) => {
     setCapturedImage(img);
@@ -22,26 +33,34 @@ export default function TakePhotos() {
 
   const handleAccept = () => {
     // Save the current image
-    setCapturedImages((prevImages) => [...prevImages, capturedImage]);
+    const updatedImages = [...(clubData.images || []), capturedImage];
+    setClubData({ ...clubData, images: updatedImages });
     setCapturedImage(null); // Clear the preview
 
     // Increment to the next step or navigate to the EnterSpecs page
-    if (currentStep < 2) {
+    if (currentStep < 8) {
       setCurrentStep((prevStep) => prevStep + 1); // Move to the next photo
     } else {
-      // Navigate to the EnterSpecs page with captured images
-      navigate('/specs', { state: { images: capturedImages } });
+      navigate('/specs');
     }
+  };
+
+  const toggleOverlay = () => {
+    setUseOverlay((prev) => !prev); // Toggle overlay usage
   };
 
   return (
     <div style={{ height: '100vh' }}>
       {!capturedImage ? (
         <>
-          <OverlaySelector onSelectOverlay={setSelectedOverlay} />
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <button onClick={toggleOverlay}>
+              {useOverlay ? 'Disable Overlay' : 'Enable Overlay'}
+            </button>
+          </div>
           <CameraView
             onCapture={handleCapture}
-            overlaySrc={selectedOverlay}
+            overlaySrc={useOverlay ? overlayImages[currentStep - 1] : null}
             facingMode="environment"
           />
           <p style={{ textAlign: 'center' }}>Step {currentStep} of 8</p>

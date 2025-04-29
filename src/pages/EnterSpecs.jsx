@@ -1,17 +1,32 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useGlobalState } from '../context/GlobalStateContext';
 
 export default function EnterSpecs() {
-  const location = useLocation();
-  const { images } = location.state || { images: [] }; // Get images from state
+  const { clubData, setClubData } = useGlobalState();
+  const { images = [], sku } = clubData;
 
-  // Example club types and their corresponding form fields
   const clubTypes = [
     { type: 'driver', fields: ['handedness', 'club number', 'loft', 'flex', 'shaft info', 'headcover', 'condition', 'grip'] },
     { type: 'iron', fields: ['handedness', 'club number', 'loft', 'flex', 'shaft info', 'headcover', 'condition', 'grip', 'bounce', 'grind'] },
     { type: 'putter', fields: ['handedness', 'length', 'grip', 'headcover'] },
-    { type: 'set', fields: ['Length', 'Loft', 'Bounce'] },
+    { type: 'set', fields: ['length', 'loft', 'bounce'] },
+    { type: 'shaft', fields: ['flex', 'material', 'length', 'condition'] },
+    { type: 'head', fields: ['type', 'loft', 'condition'] },
   ];
+
+  const [selectedClubType, setSelectedClubType] = useState(null); // Track the selected club type
+
+  const handleClubTypeSelect = (type) => {
+    setSelectedClubType(type); // Set the selected club type
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const specs = Object.fromEntries(formData.entries());
+    setClubData({ ...clubData, specs });
+    alert('Specifications saved!');
+  };
 
   return (
     <div
@@ -24,7 +39,7 @@ export default function EnterSpecs() {
       }}
     >
       <h1>Enter Specifications</h1>
-      <p>Fill out the specifications for the captured club images:</p>
+      <p>SKU: {sku}</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1rem' }}>
         {images.map((image, index) => (
           <img
@@ -35,15 +50,39 @@ export default function EnterSpecs() {
           />
         ))}
       </div>
-      <form>
-        {clubTypes.map((club, index) => (
-          <div key={index} style={{ marginBottom: '1rem' }}>
-            <h3>{club.type} Specifications</h3>
-            {club.fields.map((field, fieldIndex) => (
+
+      <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+        <p>Select the type of club you are working on:</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {clubTypes.map((club, index) => (
+            <button
+              key={index}
+              onClick={() => handleClubTypeSelect(club.type)}
+              style={{
+                padding: '0.5rem 1rem',
+                background: selectedClubType === club.type ? 'blue' : 'green',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {club.type}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedClubType && (
+        <form onSubmit={handleSubmit}>
+          <h3>{selectedClubType.charAt(0).toUpperCase() + selectedClubType.slice(1)} Specifications</h3>
+          {clubTypes
+            .find((club) => club.type === selectedClubType)
+            .fields.map((field, fieldIndex) => (
               <div key={fieldIndex} style={{ marginBottom: '0.5rem' }}>
                 <label>
                   {field}:
                   <input
+                    name={field}
                     type="text"
                     placeholder={`Enter ${field.toLowerCase()}`}
                     style={{ marginLeft: '10px' }}
@@ -51,21 +90,20 @@ export default function EnterSpecs() {
                 </label>
               </div>
             ))}
-          </div>
-        ))}
-        <button
-          type="submit"
-          style={{
-            padding: '0.5rem 1rem',
-            background: 'green',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          Submit
-        </button>
-      </form>
+          <button
+            type="submit"
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'green',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Submit
+          </button>
+        </form>
+      )}
     </div>
   );
 }
