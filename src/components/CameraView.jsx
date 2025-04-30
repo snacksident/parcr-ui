@@ -1,11 +1,9 @@
 // src/components/CameraView.jsx
 import React, { useRef } from 'react';
 import Webcam from 'react-webcam';
-import Draggable from 'react-draggable';
 
 export default function CameraView({
   onCapture,
-  overlaySrc = null,
   facingMode = 'environment',
   width = '100vh',
   height = '100vh',
@@ -38,24 +36,6 @@ export default function CameraView({
           zIndex: 1,
         }}
       />
-
-      {overlaySrc && (
-        <img
-          src={overlaySrc}
-          alt="Overlay"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            zIndex: 2,
-            pointerEvents: 'none',
-            opacity: 0.2,
-          }}
-        />
-      )}
 
       <button
         onClick={capturePhoto}
