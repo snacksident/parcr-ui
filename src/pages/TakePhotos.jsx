@@ -65,7 +65,7 @@ export default function TakePhotos() {
     setCapturedImage(null); // Clear the preview
 
     // Increment to the next step or navigate to the EnterSpecs page
-    if (currentStep < 8) {
+    if (currentStep < 2) {
       setCurrentStep((prevStep) => prevStep + 1); // Move to the next photo
     } else {
       navigate('/specs');

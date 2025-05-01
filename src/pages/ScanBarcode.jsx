@@ -22,6 +22,12 @@ export default function ScanBarcode() {
     }
   };
 
+  /**
+   * get club info depending on the SKU scanned or entered
+   * @param {string} sku - The SKU of the club.
+   * @returns {object} - The club data.
+   */
+
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Scan Club Barcode</h1>

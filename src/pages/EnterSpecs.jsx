@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalStateContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function EnterSpecs() {
   const { clubData, setClubData } = useGlobalState();
   const { images = [], sku } = clubData;
+  const navigate = useNavigate();
 
   const clubTypes = [
     { type: 'driver', fields: ['handedness', 'club number', 'loft', 'flex', 'shaft info', 'headcover', 'condition', 'grip'] },
@@ -14,18 +16,21 @@ export default function EnterSpecs() {
     { type: 'head', fields: ['type', 'loft', 'condition'] },
   ];
 
-  const [selectedClubType, setSelectedClubType] = useState(null); // Track the selected club type
+  const [selectedClubType, setSelectedClubType] = useState(null);
 
   const handleClubTypeSelect = (type) => {
-    setSelectedClubType(type); // Set the selected club type
+    setSelectedClubType(type);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const specs = Object.fromEntries(formData.entries());
-    setClubData({ ...clubData, specs });
-    alert('Specifications saved!');
+    const updatedClubData = { ...clubData, specs };
+    setClubData(updatedClubData);
+
+    // Navigate to SubmissionDetails with the updated club data
+    navigate('/submission-details', { state: { payload: updatedClubData } });
   };
 
   return (
