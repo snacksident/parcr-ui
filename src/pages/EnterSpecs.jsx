@@ -1,20 +1,18 @@
 import React, { useState } from 'react';
-import { useGlobalState } from '../context/GlobalStateContext';
+import { useClubData } from '../hooks/useClubData';
 import { useNavigate } from 'react-router-dom';
+import Button from '../components/Button';
+import clubTypes from '../config/clubTypes.json';
 
+/**
+ * 
+ * THE ENTER SPECS PAGE WILL ALLOW THE USER TO ENTER SPECS FOR THE CLUB TH4Y ARE CURRENTLY PROCESSING.
+ * WE WILL REACH OUT TO SHOPIFY TO DETERMINE WHICH SPECS ARE REQUIRED FOR THE CLUB TYPE.
+ */
 export default function EnterSpecs() {
-  const { clubData, setClubData } = useGlobalState();
+  const { clubData, updateClubData } = useClubData();
   const { images = [], sku } = clubData;
   const navigate = useNavigate();
-
-  const clubTypes = [
-    { type: 'driver', fields: ['handedness', 'club number', 'loft', 'flex', 'shaft info', 'headcover', 'condition', 'grip'] },
-    { type: 'iron', fields: ['handedness', 'club number', 'loft', 'flex', 'shaft info', 'headcover', 'condition', 'grip', 'bounce', 'grind'] },
-    { type: 'putter', fields: ['handedness', 'length', 'grip', 'headcover'] },
-    { type: 'set', fields: ['length', 'loft', 'bounce'] },
-    { type: 'shaft', fields: ['flex', 'material', 'length', 'condition'] },
-    { type: 'head', fields: ['type', 'loft', 'condition'] },
-  ];
 
   const [selectedClubType, setSelectedClubType] = useState(null);
 
@@ -26,11 +24,8 @@ export default function EnterSpecs() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const specs = Object.fromEntries(formData.entries());
-    const updatedClubData = { ...clubData, specs };
-    setClubData(updatedClubData);
-
-    // Navigate to SubmissionDetails with the updated club data
-    navigate('/submission-details', { state: { payload: updatedClubData } });
+    updateClubData({ specs });
+    navigate('/submission-details', { state: { payload: { ...clubData, specs } } });
   };
 
   return (
@@ -60,19 +55,12 @@ export default function EnterSpecs() {
         <p>Select the type of club you are working on:</p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
           {clubTypes.map((club, index) => (
-            <button
+            <Button
               key={index}
               onClick={() => handleClubTypeSelect(club.type)}
-              style={{
-                padding: '0.5rem 1rem',
-                background: selectedClubType === club.type ? 'blue' : 'green',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-              }}
             >
               {club.type}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -95,7 +83,7 @@ export default function EnterSpecs() {
                 </label>
               </div>
             ))}
-          <button
+          <Button
             type="submit"
             style={{
               padding: '0.5rem 1rem',
@@ -106,7 +94,7 @@ export default function EnterSpecs() {
             }}
           >
             Submit
-          </button>
+          </Button>
         </form>
       )}
     </div>

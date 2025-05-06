@@ -1,3 +1,8 @@
+/**
+ * 
+ * THIS FUNCTION WILL BUILD THE PAYLOAD FOR ALL THE INFORMATION THE USER ENTERED IN PREVIOUS STEPS, AND CREATE THE LISTING ON SHOPIFY. 
+ */
+
 export function buildShopifyPayload(clubData) {
     const { specs, images } = clubData;
   

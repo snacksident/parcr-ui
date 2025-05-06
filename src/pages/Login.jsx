@@ -1,6 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-
+/**
+ * 
+ * THE LOGIN PAGE WILL TAKE A USERNAME AND PASSWORD, USING THE USERNAME AS 'INITIALS' WHEN CREATING LISTINGS ON SHOPIFY.
+ */
 export default function Login() {
   const navigate = useNavigate();
 

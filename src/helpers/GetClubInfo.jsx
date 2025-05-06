@@ -1,20 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { fetchProducts } from './apiCalls';
 
 export default function GetClubInfo() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('http://localhost:5000/shopify/products');
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      }
-    };
-
-    fetchProducts();
+    fetchProducts()
+      .then((data) => setProducts(data.products || []))
+      .catch((error) => console.error('Error fetching products:', error));
   }, []);
 
   return (

@@ -1,4 +1,5 @@
 import React from 'react';
+import Button from './Button';
 
 export default function PreviewImage({ imageSrc, onRetake, onAccept }) {
   return (
@@ -22,32 +23,16 @@ export default function PreviewImage({ imageSrc, onRetake, onAccept }) {
         style={{ maxWidth: '90%', maxHeight: '70%', marginBottom: '1rem' }}
       />
       <div style={{ display: 'flex', gap: '1rem' }}>
-        <button
+        <Button
           onClick={onRetake}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '5px',
-            background: 'red',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-          }}
         >
           Retake
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={onAccept}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '5px',
-            background: 'green',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-          }}
         >
           Accept
-        </button>
+        </Button>
       </div>
     </div>
   );

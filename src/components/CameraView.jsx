@@ -1,55 +1,66 @@
 // src/components/CameraView.jsx
-import React, { useRef } from 'react';
-import Webcam from 'react-webcam';
+import React, { useEffect, useRef } from 'react';
 
-export default function CameraView({
-  onCapture,
-  facingMode = 'environment',
-  width = '100vh',
-  height = '100vh',
-}) {
-  const webcamRef = useRef(null);
+export default function CameraView({ onCapture, facingMode = 'environment' }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    let stream;
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+        });
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [facingMode]);
 
   const capturePhoto = () => {
-    const imageSrc = webcamRef.current.getScreenshot();
-    if (onCapture) onCapture(imageSrc);
-  };
-
-  const videoConstraints = {
-    facingMode,
-    width: 1280,
-    height: 720,
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/jpeg');
+    onCapture(imageData);
   };
 
   return (
-    <div style={{ position: 'relative', width, height }}>
-      <Webcam
-        audio={false}
-        ref={webcamRef}
-        screenshotFormat="image/jpeg"
-        videoConstraints={videoConstraints}
-        style={{
-          position: 'absolute',
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 1,
-        }}
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <video
+        ref={videoRef}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        autoPlay
+        muted
       />
-
       <button
         onClick={capturePhoto}
         style={{
           position: 'absolute',
-          zIndex: 3,
-          padding: '1rem',
-          borderRadius: '50%',
+          bottom: '1rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '0.5rem 1rem',
           background: 'white',
-          border: '2px solid black',
+          border: 'none',
+          borderRadius: '5px',
           cursor: 'pointer',
         }}
       >
-        📸
+        Capture
       </button>
     </div>
   );

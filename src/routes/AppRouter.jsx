@@ -5,7 +5,7 @@ import ScanBarcode from '../pages/ScanBarcode';
 import TakePhotos from '../pages/TakePhotos';
 import EnterSpecs from '../pages/EnterSpecs';
 import ConfirmUpload from '../pages/ConfirmUpload';
-import SubmissionDetails from '../pages/SubmissionDetails'; // Import the new page
+import SubmissionDetails from '../pages/SubmissionDetails';
 
 export default function AppRouter() {
   return (
@@ -16,7 +16,7 @@ export default function AppRouter() {
         <Route path="/photos" element={<TakePhotos />} />
         <Route path="/specs" element={<EnterSpecs />} />
         <Route path="/confirm" element={<ConfirmUpload />} />
-        <Route path="/submission-details" element={<SubmissionDetails />} /> {/* Ensure this route exists */}
+        <Route path="/submission-details" element={<SubmissionDetails />} />
       </Routes>
     </Router>
   );

@@ -2,7 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGlobalState } from '../context/GlobalStateContext';
 import { buildShopifyPayload } from '../helpers/BuildShopifyPayload';
-
+import Button from '../components/Button';
+/**
+ * 
+ * THIS IS THE FINAL CHECK FOR THE USER TO VERIFY ALL INFORMATION IS CORRECT BEFORE PUSHING THE LISTING TO SHOPIFY.
+ */
 export default function ConfirmUpload() {
   const { clubData } = useGlobalState();
   const navigate = useNavigate();
@@ -42,7 +46,7 @@ export default function ConfirmUpload() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Confirm & Upload</h1>
-      <button onClick={handleUpload}>Upload to Shopify</button>
+      <Button onClick={handleUpload}>Upload to Shopify</Button>
     </div>
   );
 }

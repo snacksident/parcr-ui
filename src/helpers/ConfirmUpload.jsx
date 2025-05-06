@@ -33,7 +33,7 @@ export default function ConfirmUpload() {
   return (
     <div>
       <h1>Confirm & Upload</h1>
-      <button onClick={handleUpload}>Upload to Shopify</button>
+      <Button onClick={handleUpload}>Upload to Shopify</Button>
     </div>
   );
 }
