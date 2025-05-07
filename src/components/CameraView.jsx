@@ -1,8 +1,10 @@
 // src/components/CameraView.jsx
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Overlay from './Overlay';
 
-export default function CameraView({ onCapture, facingMode = 'environment' }) {
+export default function CameraView({ onCapture, facingMode = 'environment', clubType, step }) {
   const videoRef = useRef(null);
+  const [overlayVisible, setOverlayVisible] = useState(false); // State to toggle overlay visibility
 
   useEffect(() => {
     let stream;
@@ -38,6 +40,10 @@ export default function CameraView({ onCapture, facingMode = 'environment' }) {
     onCapture(imageData);
   };
 
+  const toggleOverlay = () => {
+    setOverlayVisible((prev) => !prev); // Toggle overlay visibility
+  };
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <video
@@ -46,6 +52,7 @@ export default function CameraView({ onCapture, facingMode = 'environment' }) {
         autoPlay
         muted
       />
+      {overlayVisible && <Overlay clubType={clubType} step={step} />}
       <button
         onClick={capturePhoto}
         style={{
@@ -58,9 +65,28 @@ export default function CameraView({ onCapture, facingMode = 'environment' }) {
           border: 'none',
           borderRadius: '5px',
           cursor: 'pointer',
+          zIndex: 3,
         }}
       >
         Capture
+      </button>
+      <button
+        onClick={toggleOverlay}
+        style={{
+          position: 'absolute',
+          bottom: '4rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '0.5rem 1rem',
+          background: overlayVisible ? 'red' : 'green',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          zIndex: 3,
+        }}
+      >
+        {overlayVisible ? 'Hide Overlay' : 'Show Overlay'}
       </button>
     </div>
   );

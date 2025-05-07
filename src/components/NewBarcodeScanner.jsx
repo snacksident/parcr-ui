@@ -12,17 +12,28 @@ export default function NewBarcodeScanner({ onSave }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let stream; // Track the camera stream
+
     // Request camera permissions
     navigator.mediaDevices
       .getUserMedia({ video: true })
-      .then(() => {
+      .then((mediaStream) => {
         console.log('Camera permissions granted');
         setPermissionsGranted(true); // Update state to render the scanner
+        stream = mediaStream; // Save the stream reference
       })
       .catch((err) => {
         console.error('Camera permissions denied:', err);
         alert('Camera permissions are required to scan barcodes. Please enable them in your browser settings.');
       });
+
+    return () => {
+      // Stop the camera stream when the component unmounts
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        console.log('Camera stream stopped');
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -58,9 +69,8 @@ export default function NewBarcodeScanner({ onSave }) {
     Quagga.onDetected((data) => {
       console.log('Scanned Barcode:', data.codeResult.code); // Log the scanned barcode
       onSave(data.codeResult.code); // Save the scanned data
-      alert(`scanned barcode: ${data.codeResult.code}`); // Alert the scanned barcode
       Quagga.stop(); // Stop the scanner after a successful scan
-    //   navigate('/photos'); // Navigate to the photograph step
+      navigate('/photos'); // Navigate to the photograph step
     });
 
     // Cleanup function to stop Quagga

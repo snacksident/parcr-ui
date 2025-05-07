@@ -4,17 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useClubData } from '../hooks/useClubData';
 import CameraView from '../components/CameraView';
 import PreviewImage from '../components/PreviewImage';
-import Overlay from '../components/Overlay';
-import { getOverlayImage } from '../utils/overlayUtils';
 
 /**
- * 
- * TAKEPHOTOS WILL BE USED TO CAPTURE IMAGES OF THE CLUB, DEPENDING ON THE TYPE.  WE WILL CONFIRM THE SKU WITH SHOPIFY, WHICH WILL RETURN US DATA ON WHICH TYPE OF CLUB IS BEING PROCESSED, AND WILL PROVIDE A SPECIFIC OVERLAY AND IMAGE COUNT, FOR THAT TYPE OF CLUB.
+ * TAKEPHOTOS WILL BE USED TO CAPTURE IMAGES OF THE CLUB, DEPENDING ON THE TYPE.
  */
 export default function TakePhotos() {
   const { clubData, updateClubData } = useClubData();
   const [currentStep, setCurrentStep] = useState(1); // Track the current step
-  const [useOverlay, setUseOverlay] = useState(false); // Toggle for overlay usage
   const [capturedImage, setCapturedImage] = useState(null);
   const navigate = useNavigate();
 
@@ -33,49 +29,25 @@ export default function TakePhotos() {
     setCapturedImage(null); // Clear the preview
 
     // Increment to the next step or navigate to the EnterSpecs page
-    if (currentStep < 2) {
+    if (currentStep < 8) {
       setCurrentStep((prevStep) => prevStep + 1); // Move to the next photo
     } else {
       navigate('/specs');
     }
   };
 
-  const toggleOverlay = () => {
-    setUseOverlay((prev) => !prev); // Toggle overlay usage
-  };
-
-  const overlaySrc = getOverlayImage(clubData.type, currentStep);
+  clubData.type = 'driver'
 
   return (
     <div style={{ height: '100vh' }}>
       {!capturedImage ? (
         <>
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <button onClick={toggleOverlay}>
-              {useOverlay ? 'Disable Overlay' : 'Enable Overlay'}
-            </button>
-          </div>
           <CameraView
             onCapture={handleCapture}
             facingMode="environment"
+            clubType={clubData.type} // Pass the club type
+            step={currentStep} // Pass the current step
           />
-          {useOverlay && (
-            <Overlay
-              src={overlaySrc}
-              alt="Overlay"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                zIndex: 2,
-                pointerEvents: 'none',
-                opacity: 0.3, // Adjust transparency
-              }}
-            />
-          )}
           <p style={{ textAlign: 'center' }}>Step {currentStep} of 8</p>
         </>
       ) : (
