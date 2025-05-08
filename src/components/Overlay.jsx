@@ -1,10 +1,10 @@
-import React from 'react';
+import React from 'react'
 
 export default function Overlay({ clubType, step }) {
   if (!clubType) return null; // Don't render if club type is not provided
 
   // Construct the overlay image path dynamically
-  const overlaySrc = `/assets/${clubType}/${step}.jpg`;
+  const overlaySrc = `/assets/${clubType}/${step}.jpg`
 
   return (
     <img
@@ -22,5 +22,5 @@ export default function Overlay({ clubType, step }) {
         opacity: 0.3, // Adjust transparency
       }}
     />
-  );
+  )
 }

@@ -4,7 +4,7 @@
  */
 
 export function buildShopifyPayload(clubData) {
-    const { specs, images } = clubData;
+    const { specs, images } = clubData
   
     return {
       product: {

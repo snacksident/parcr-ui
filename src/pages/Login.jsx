@@ -9,7 +9,7 @@ export default function Login() {
 
   const handleLogin = () => {
     // TODO: Auth later
-    navigate('/scan');
+    navigate('/scan')
   };
 
   return (

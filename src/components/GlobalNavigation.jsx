@@ -1,24 +1,24 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import Button from './Button';
+import React from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import Button from './Button'
 
 export default function GlobalNavigation() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate()
+  const location = useLocation()
 
   // Defensive check: Ensure location is defined
   if (!location) {
-    console.error('GlobalNavigation: location is undefined.');
+    console.error('GlobalNavigation: location is undefined.')
     return null;
   }
 
   const handleBack = () => {
     navigate(-1); // Go back to the previous page
-  };
+  }
 
   const handleStartOver = () => {
     navigate('/'); // Navigate to the starting page (e.g., Login)
-  };
+  }
 
   // Hide navigation on the Login page
   if (location.pathname === '/') {
@@ -48,5 +48,5 @@ export default function GlobalNavigation() {
         Start Over
       </Button>
     </div>
-  );
+  )
 }

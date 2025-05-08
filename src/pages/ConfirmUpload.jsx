@@ -1,52 +1,87 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useGlobalState } from '../context/GlobalStateContext';
-import { buildShopifyPayload } from '../helpers/BuildShopifyPayload';
-import Button from '../components/Button';
-/**
- * 
- * THIS IS THE FINAL CHECK FOR THE USER TO VERIFY ALL INFORMATION IS CORRECT BEFORE PUSHING THE LISTING TO SHOPIFY.
- */
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useGlobalState } from '../context/GlobalStateContext'
+import { buildShopifyPayload } from '../helpers/BuildShopifyPayload'
+import Button from '../components/Button'
+
 export default function ConfirmUpload() {
-  const { clubData } = useGlobalState();
-  const navigate = useNavigate();
+  const { clubData } = useGlobalState()
+  const navigate = useNavigate()
+  const endpoint = 'http://localhost:3000'
+  const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleUpload = async () => {
-    const payload = buildShopifyPayload(clubData);
-    console.log('Payload being sent to Shopify:', payload);
-
+    const testPayload = buildShopifyPayload(clubData)
+    console.log('Test Payload:', testPayload)
     try {
-      const response = await fetch('https://your-shopify-store.myshopify.com/admin/api/2023-04/products.json', {
+      setIsUploading(true)
+      setError(null)
+      
+      // Create and check payload size
+      const payload = buildShopifyPayload(clubData)
+      delete payload.images // Remove images from payload
+      
+      const payloadSize = new Blob([JSON.stringify(payload)]).size
+      console.log('Payload size (bytes):', payloadSize)
+      
+      if (payloadSize > 1000000) { // 1MB limit
+        throw new Error('Payload too large. Please reduce data size.')
+      }
+
+      console.log('Payload being sent to Shopify:', payload)
+
+      const response = await fetch(`${endpoint}/api/create-listing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Shopify-Access-Token': 'your-shopify-access-token', // Replace with your token
         },
         body: JSON.stringify(payload),
-      });
+      })
 
-      const result = await response.json();
-      console.log('Shopify API Response:', result);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('Shopify API Response:', result)
 
       if (result.product) {
-        alert('Product created successfully!');
+        alert('Product created successfully!')
+        navigate('/')
       } else {
-        alert('Failed to create product.');
+        throw new Error('Failed to create product')
       }
     } catch (error) {
-      console.error('Error creating product:', error);
-      alert('Failed to create product.');
+      console.error('Error:', error)
+      setError(error.message)
+    } finally {
+      setIsUploading(false)
     }
-
-    // Redirect to the SubmissionDetails page with the payload
-    console.log('Redirecting to SubmissionDetails with payload:', payload);
-    navigate('/submission-details', { state: { payload } });
-  };
+  }
 
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Confirm & Upload</h1>
-      <Button onClick={handleUpload}>Upload to Shopify</Button>
+      
+      {error && (
+        <div style={{ 
+          color: 'red', 
+          padding: '1rem', 
+          marginBottom: '1rem',
+          background: '#ffebee',
+          borderRadius: '4px'
+        }}>
+          Error: {error}
+        </div>
+      )}
+
+      <Button 
+        onClick={handleUpload} 
+        disabled={isUploading}
+      >
+        {isUploading ? 'Uploading...' : 'Upload to Shopify'}
+      </Button>
     </div>
-  );
+  )
 }

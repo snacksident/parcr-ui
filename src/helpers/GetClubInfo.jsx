@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { fetchProducts } from './apiCalls';
+import React, { useEffect, useState } from 'react'
+import { fetchProducts } from './apiCalls'
 
 export default function GetClubInfo() {
   const [products, setProducts] = useState([]);
@@ -7,8 +7,8 @@ export default function GetClubInfo() {
   useEffect(() => {
     fetchProducts()
       .then((data) => setProducts(data.products || []))
-      .catch((error) => console.error('Error fetching products:', error));
-  }, []);
+      .catch((error) => console.error('Error fetching products:', error))
+  }, [])
 
   return (
     <div>
@@ -19,5 +19,5 @@ export default function GetClubInfo() {
         ))}
       </ul>
     </div>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 
 export default function OverlaySelector({ onSelectOverlay }) {
   const wedgeImages = [
@@ -10,14 +10,14 @@ export default function OverlaySelector({ onSelectOverlay }) {
     '/src/assets/wedge6.webp',
     '/src/assets/wedge7.webp',
     '/src/assets/wedge8.webp',
-  ];
+  ]
 
-  const [selectedOverlay, setSelectedOverlay] = useState(null);
+  const [selectedOverlay, setSelectedOverlay] = useState(null)
 
   const handleSelect = (image) => {
     setSelectedOverlay(image);
     if (onSelectOverlay) onSelectOverlay(image); // Pass the selected overlay to the parent
-  };
+  }
 
   return (
     <div
@@ -45,5 +45,5 @@ export default function OverlaySelector({ onSelectOverlay }) {
         />
       ))}
     </div>
-  );
+  )
 }

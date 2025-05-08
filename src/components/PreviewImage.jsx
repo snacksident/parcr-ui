@@ -1,5 +1,5 @@
-import React from 'react';
-import Button from './Button';
+import React from 'react'
+import Button from './Button'
 
 export default function PreviewImage({ imageSrc, onRetake, onAccept }) {
   return (
@@ -35,5 +35,5 @@ export default function PreviewImage({ imageSrc, onRetake, onAccept }) {
         </Button>
       </div>
     </div>
-  );
+  )
 }

@@ -9,34 +9,32 @@ import PreviewImage from '../components/PreviewImage';
  * TAKEPHOTOS WILL BE USED TO CAPTURE IMAGES OF THE CLUB, DEPENDING ON THE TYPE.
  */
 export default function TakePhotos() {
-  const { clubData, updateClubData } = useClubData();
-  const [currentStep, setCurrentStep] = useState(1); // Track the current step
-  const [capturedImage, setCapturedImage] = useState(null);
-  const navigate = useNavigate();
+  const { clubData, updateClubData } = useClubData()
+  const [currentStep, setCurrentStep] = useState(1)
+  const [capturedImage, setCapturedImage] = useState(null)
+  const navigate = useNavigate()
 
   const handleCapture = (img) => {
-    setCapturedImage(img);
+    setCapturedImage(img)
   };
 
   const handleRetake = () => {
-    setCapturedImage(null); // Clear the captured image to retake
+    setCapturedImage(null)
   };
 
   const handleAccept = () => {
     // Save the current image
-    const updatedImages = [...(clubData.images || []), capturedImage];
-    updateClubData({ images: updatedImages });
-    setCapturedImage(null); // Clear the preview
+    const updatedImages = [...(clubData.images || []), capturedImage]
+    updateClubData({ images: updatedImages })
+    setCapturedImage(null)
 
     // Increment to the next step or navigate to the EnterSpecs page
     if (currentStep < 8) {
-      setCurrentStep((prevStep) => prevStep + 1); // Move to the next photo
+      setCurrentStep((prevStep) => prevStep + 1)
     } else {
-      navigate('/specs');
+      navigate('/specs')
     }
   };
-
-  clubData.type = 'driver'
 
   return (
     <div style={{ height: '100vh' }}>
@@ -58,5 +56,5 @@ export default function TakePhotos() {
         />
       )}
     </div>
-  );
+  )
 }
