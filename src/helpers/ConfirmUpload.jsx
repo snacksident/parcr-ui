@@ -1,5 +1,7 @@
 import React from 'react'
 
+const baseUrl = 'https://parcr-backend.onrender.com/api'
+
 export default function ConfirmUpload() {
   const handleUpload = async () => {
     const productData = {

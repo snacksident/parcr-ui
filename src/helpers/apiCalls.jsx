@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/shopify'
+const BASE_URL = 'https://parcr-backend.onrender.com/api'
 
 export async function fetchProducts() {
   const response = await fetch(`${BASE_URL}/products`)

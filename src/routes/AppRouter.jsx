@@ -4,7 +4,7 @@ import Login from '../pages/Login'
 import ScanBarcode from '../pages/ScanBarcode'
 import TakePhotos from '../pages/TakePhotos'
 import EnterSpecs from '../pages/EnterSpecs'
-import ConfirmUpload from '../pages/ConfirmUpload'
+// import ConfirmUpload from '../pages/ConfirmUpload'
 import SubmissionDetails from '../pages/SubmissionDetails'
 
 export default function AppRouter() {
@@ -15,7 +15,6 @@ export default function AppRouter() {
         <Route path="/scan" element={<ScanBarcode />} />
         <Route path="/photos" element={<TakePhotos />} />
         <Route path="/specs" element={<EnterSpecs />} />
-        <Route path="/confirm" element={<ConfirmUpload />} />
         <Route path="/submission-details" element={<SubmissionDetails />} />
       </Routes>
     </Router>

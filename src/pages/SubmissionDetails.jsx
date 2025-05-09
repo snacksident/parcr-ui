@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useClubData } from '../hooks/useClubData' // Add this import
+import { useClubData } from '../hooks/useClubData'
 import axios from 'axios'
+
+const baseUrl = 'https://parcr-backend.onrender.com/api'
 
 export default function SubmissionDetails() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { resetClubData } = useClubData() // Add this hook
+  const { resetClubData } = useClubData()
   const payload = location.state?.payload
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState(null)
@@ -16,7 +18,6 @@ export default function SubmissionDetails() {
       throw new Error('Invalid payload data');
     }
 
-    // Transform snake_case fields to match backend expectations
     const specs = {
       custom_label: payload.specs['custom label'] || '',
       initials: payload.specs.initials || '',
@@ -31,8 +32,8 @@ export default function SubmissionDetails() {
       manufacturer: payload.specs.manufacturer || '',
       condition: payload.specs.condition || '',
       handedness: payload.specs.handedness || '',
-      bounce: payload.specs.bounce || '', // For wedges
-      additional_notes: payload.specs['additional notes'] || '' // For putters
+      bounce: payload.specs.bounce || '',
+      additional_notes: payload.specs['additional notes'] || ''
     };
 
     return {
@@ -50,7 +51,7 @@ export default function SubmissionDetails() {
           <h3>Product Specifications:</h3>
           <ul>
             ${Object.entries(specs)
-              .filter(([_, value]) => value) // Only include non-empty values
+              .filter(([_, value]) => value)
               .map(([key, value]) => `<li><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong>: ${value}</li>`)
               .join('')}
           </ul>
@@ -63,49 +64,39 @@ export default function SubmissionDetails() {
         specs.model,
         specs.flex,
         specs.shaft_material,
-        specs.condition,
-        specs.club_number,
-        specs.handedness,
-        specs.club_length,
-        specs.grip_make_model_size,
-        specs.shaft_make_model,
-        specs.custom_label,
-        specs.initials,
-        specs.loft,
-        specs.bounce,
-        specs.additional_notes
+        specs.condition
       ].filter(Boolean)
     };
   };
 
   const handleCreateListing = async () => {
     try {
-      setIsCreating(true);
-      setError(null);
-  
-      const productData = transformDataForShopify(payload);
-      console.log('Sending to Shopify:', productData);
-  
-      const response = await axios.post('http://localhost:3000/api/create-listing', productData, {
+      setIsCreating(true)
+      setError(null)
+
+      const productData = transformDataForShopify(payload)
+      console.log('Creating listing:', productData)
+
+      const response = await axios.post(`${baseUrl}/create-listing`, productData, {
         headers: {
           'Content-Type': 'application/json',
         }
-      });
-  
+      })
+
       if (response.data.success) {
-        alert('Listing created successfully!');
-        resetClubData() // Reset the club data after successful creation
-        navigate('/scan') // Navigate to scan page to start fresh
+        alert('Listing created successfully!')
+        resetClubData()
+        navigate('/scan')
       } else {
-        throw new Error(response.data.error || 'Failed to create listing');
+        throw new Error(response.data.error || 'Failed to create listing')
       }
     } catch (error) {
-      console.error('Error creating listing:', error);
-      setError(error.response?.data?.message || error.message);
+      console.error('Error creating listing:', error)
+      setError(error.response?.data?.message || error.message)
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   if (!payload) {
     return (
