@@ -5,6 +5,34 @@ import axios from 'axios'
 
 const baseUrl = 'https://parcr-backend.onrender.com/api'
 
+// Modify the base64ToFile utility function at the top
+const base64ToFile = (base64String, index) => {
+  try {
+    // Remove data URL prefix if present
+    const base64WithPrefix = base64String.startsWith('data:image/')
+      ? base64String
+      : `data:image/jpeg;base64,${base64String}`;
+
+    // Extract actual base64 data
+    const base64Data = base64WithPrefix.split(',')[1];
+    
+    // Convert base64 to blob
+    const byteString = atob(base64Data);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([ab], { type: 'image/jpeg' });
+    return new File([blob], `image${index}.jpg`, { type: 'image/jpeg' });
+  } catch (error) {
+    console.error('Error converting base64 to file:', error);
+    throw error;
+  }
+};
+
 export default function SubmissionDetails() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -12,6 +40,7 @@ export default function SubmissionDetails() {
   const payload = location.state?.payload
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState(null)
+  const [uploadStatus, setUploadStatus] = useState('')
 
   const transformDataForShopify = (payload) => {
     if (!payload || !payload.specs) {
@@ -73,7 +102,9 @@ export default function SubmissionDetails() {
     try {
       setIsCreating(true)
       setError(null)
+      setUploadStatus('Creating listing...')
 
+      // Step 1: Create listing without images
       const productData = transformDataForShopify(payload)
       console.log('Creating listing:', productData)
 
@@ -83,18 +114,78 @@ export default function SubmissionDetails() {
         }
       })
 
-      if (response.data.success) {
-        alert('Listing created successfully!')
-        resetClubData()
-        navigate('/scan')
-      } else {
+      if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to create listing')
       }
+
+      const productGid = response.data.data.id
+      const productId = productGid.split('/').pop()
+      
+      // Step 2: If we have images and a productId, upload them
+      if (productId && payload.images?.length > 0) {
+        setUploadStatus('Preparing images for upload...');
+        
+        try {
+          const formData = new FormData();
+          
+          // Format the productId
+          const formattedId = productId.includes('gid://') 
+            ? productId 
+            : `gid://shopify/Product/${productId}`;
+          
+          formData.append('productId', formattedId);
+
+          // Prepare image metadata for staged uploads
+          const imageInputs = payload.images.map((base64String, index) => {
+            const file = base64ToFile(base64String, index);
+            formData.append('images', file);
+            
+            // Return metadata for each image
+            return {
+              filename: file.name,
+              mimeType: file.type,
+              fileSize: file.size.toString(),
+              resource: 'IMAGE'
+            };
+          });
+
+          // Add image metadata to FormData
+          formData.append('imageMetadata', JSON.stringify(imageInputs));
+
+          console.log('Uploading images with metadata:', {
+            productId: formattedId,
+            imageCount: imageInputs.length,
+            metadata: imageInputs
+          });
+
+          const imageResponse = await axios.post(`${baseUrl}/add-product-images`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            },
+            timeout: 60000
+          });
+
+          if (!imageResponse.data.success) {
+            throw new Error(imageResponse.data.message || 'Failed to upload images');
+          }
+
+          console.log('Images uploaded successfully:', imageResponse.data);
+        } catch (imageError) {
+          console.error('Error uploading images:', imageError);
+          setError(`Image upload failed: ${imageError.response?.data?.message || imageError.message}`);
+        }
+      }
+
+      // Success - proceed even if images failed
+      alert('Listing created successfully!')
+      resetClubData()
+      navigate('/scan')
     } catch (error) {
       console.error('Error creating listing:', error)
       setError(error.response?.data?.message || error.message)
     } finally {
       setIsCreating(false)
+      setUploadStatus('')
     }
   }
 
@@ -133,6 +224,18 @@ export default function SubmissionDetails() {
           borderRadius: '4px'
         }}>
           {error}
+        </div>
+      )}
+
+      {uploadStatus && (
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1rem',
+          background: '#e3f2fd',
+          color: '#1565c0',
+          borderRadius: '4px'
+        }}>
+          {uploadStatus}
         </div>
       )}
 
@@ -218,7 +321,7 @@ export default function SubmissionDetails() {
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
         }}
       >
-        {isCreating ? 'Creating Listing...' : 'Create Shopify Listing'}
+        {isCreating ? uploadStatus || 'Creating Listing...' : 'Create Shopify Listing'}
       </button>
     </div>
   )

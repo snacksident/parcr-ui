@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useClubData } from '../hooks/useClubData'
 import { useNavigate } from 'react-router-dom'
 import { fieldConfigs } from '../utils/fieldConfigs'
@@ -7,7 +7,18 @@ import Button from '../components/Button'
 export default function EnterSpecs() {
   const { clubData, updateClubData } = useClubData()
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({})
+  // Initialize form data with clubData specs if available
+  const [formData, setFormData] = useState(clubData?.specs || {})
+
+  useEffect(() => {
+    // Update form data when clubData changes
+    if (clubData?.specs) {
+      setFormData(prevData => ({
+        ...prevData,
+        ...clubData.specs
+      }));
+    }
+  }, [clubData]);
 
   const sku = clubData?.sku || ''
   const images = clubData?.images || []

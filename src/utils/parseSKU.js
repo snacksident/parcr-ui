@@ -25,7 +25,7 @@ const manufacturers = {
     if (!sku || sku.length < 7) return null
   
     // Extract components
-    const clubNumber = sku.charAt(0)
+    // const clubNumber = sku.charAt(0)
     const manufacturerCode = sku.substring(1, 5).trim()
     const modelCode = sku.substring(5, 7)
     
@@ -33,7 +33,7 @@ const manufacturers = {
     const manufacturer = manufacturers[manufacturerCode] || manufacturerCode
   
     return {
-      clubNumber,
+      // clubNumber,
       manufacturer,
       modelCode
     };

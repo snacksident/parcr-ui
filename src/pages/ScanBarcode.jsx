@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClubData } from '../hooks/useClubData'
 import NewBarcodeScanner from '../components/NewBarcodeScanner'
+import axios from 'axios'
+
+const baseUrl = 'https://parcr-backend.onrender.com/api'
 
 export default function ScanBarcode() {
   const navigate = useNavigate()
@@ -10,15 +13,63 @@ export default function ScanBarcode() {
   const [error, setError] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
-  const handleSave = (barcodeData) => {
+  const getProductTemplate = async (sku) => {
+    try {
+      console.log('Fetching template for complete SKU:', sku);
+      const response = await axios.get(`${baseUrl}/product-template/${sku}`);
+      
+      console.log('Full template response:', {
+        success: response.data.success,
+        template: response.data.data,
+        rawMetafields: response.data.data?.rawMetafields,
+        searchedSku: sku // Add this for debugging
+      });
+
+      if (response.data.success) {
+        const template = response.data.data;
+        // Update club data with template information
+        updateClubData({
+          sku, // Use the complete SKU
+          type: template.productType,
+          specs: {
+            manufacturer: template.manufacturer,
+            model: template.specs?.model || '',
+            condition: template.specs?.condition || '',
+            'club number': template.specs?.club_number || '',
+            'grip make/model/size': template.specs?.grip_make_model_size || '',
+            'club length': template.specs?.club_length || '',
+            'shaft material': template.specs?.shaft_material || '',
+            'shaft make/model': template.specs?.shaft_make_model || '',
+            loft: template.specs?.loft || '',
+            flex: template.specs?.shaft_flex || '',
+            bounce: template.specs?.bounce || '',
+            handedness: template.specs?.handedness || '',
+            initials: template.specs?.initials || '',
+            'custom label': template.specs?.custom_label || '',
+            'additional notes': template.specs?.additional_notes || ''
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching template:', {
+        sku, // Log the SKU that failed
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      updateClubData({ sku });
+    }
+  };
+
+  const handleSave = async (barcodeData) => {
     console.log('Scanned Barcode:', barcodeData)
-    updateClubData({ sku: barcodeData })
+    await getProductTemplate(barcodeData)
     navigate('/photos')
   };
 
-  const handleManualEntry = () => {
-    if (manualSKU.trim()) {
-      updateClubData({ sku: manualSKU })
+  const handleManualEntry = async () => {
+    if (manualSKU) {
+      await getProductTemplate(manualSKU)
       setShowModal(false)
       navigate('/photos')
     } else {
