@@ -1,226 +1,171 @@
 import React, { useState, useEffect } from 'react'
-import { useClubData } from '../hooks/useClubData'
 import { useNavigate } from 'react-router-dom'
-import { fieldConfigs } from '../utils/fieldConfigs'
-import Button from '../components/Button'
+import { useClubData } from '../context/GlobalStateContext'
 
 export default function EnterSpecs() {
-  const { clubData, updateClubData } = useClubData()
   const navigate = useNavigate()
-  // Initialize form data with clubData specs if available
-  const [formData, setFormData] = useState(clubData?.specs || {})
+  const { clubData, updateClubData } = useClubData()
+  const [formData, setFormData] = useState({})
 
+  console.log(clubData)
+
+  // Initialize form with required fields
   useEffect(() => {
-    // Update form data when clubData changes
-    if (clubData?.specs) {
-      setFormData(prevData => ({
-        ...prevData,
-        ...clubData.specs
-      }));
+    console.log('Current clubData:', clubData);
+    
+    if (clubData?.requiredFields) {
+      // Convert requiredFields to initial form values
+      const initialFormData = Object.entries(clubData.requiredFields)
+        .reduce((acc, [key, field]) => ({
+          ...acc,
+          [key]: field.currentValue === 'COMING SOON' ? '' : field.currentValue
+        }), {});
+
+      setFormData(initialFormData);
+      console.log('Initialized form with fields:', initialFormData);
     }
-  }, [clubData]);
+  }, [clubData]); // Watch entire clubData object
 
-  const sku = clubData?.sku || ''
-  const images = clubData?.images || []
-  const clubType = clubData?.type || ''
-
-  const getClubFieldsByType = (type) => {
-    const clubFields = {
-      driver: ['condition', 'manufacturer', 'model', 'flex', 'loft', 'shaft make/model', 'shaft material', 'club length', 'grip make/model/size', 'handedness', 'club type', 'club number', 'initials', 'custom label'],
-      fairway: ['condition', 'manufacturer', 'model', 'flex', 'loft', 'shaft make/model', 'shaft material', 'club length', 'grip make/model/size', 'handedness', 'club type', 'club number', 'initials', 'custom label'],
-      hybrid: ['condition', 'manufacturer', 'model', 'flex', 'loft', 'shaft make/model', 'shaft material', 'club length', 'grip make/model/size', 'handedness', 'club type', 'club number', 'initials', 'custom label'],
-      iron: ['condition', 'manufacturer', 'model', 'flex', 'loft', 'shaft make/model', 'shaft material', 'club length', 'grip make/model/size', 'handedness', 'club type', 'club number', 'initials', 'custom label'],
-      wedge: ['condition', 'manufacturer', 'model', 'flex', 'loft', 'shaft make/model', 'shaft material', 'club length', 'grip make/model/size', 'handedness', 'club type', 'club number', 'bounce', 'initials', 'custom label'],
-      putter: ['condition', 'manufacturer', 'model', 'shaft make/model', 'grip make/model/size', 'club length', 'handedness', 'club type', 'club number', 'additional notes', 'custom label'],
-      shaft: ['brand', 'model'],
-      item: ['brand']
-    }
-    return clubFields[type] || [];
-  }
-
-  const fields = getClubFieldsByType(clubType)
-
-  const handleFieldChange = (field, value) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value
     }));
   };
 
-  const renderField = (field) => {
-    const config = fieldConfigs[field] || { type: 'text' }
-
-    switch (config.type) {
-      case 'select':
-        return (
-          <select
-            name={field}
-            value={formData[field] || ''}
-            onChange={(e) => handleFieldChange(field, e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '1rem'
-            }}
-          >
-            <option value="">Select {field}</option>
-            {config.options.map(option => (
-              <option key={option} value={option}>{option}</option>
-            ))}
-          </select>
-        )
-
-      case 'autocomplete':
-        return (
-          <input
-            list={`${field}-list`}
-            name={field}
-            value={formData[field] || ''}
-            onChange={(e) => handleFieldChange(field, e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '1rem'
-            }}
-          />
-        )
-
-      case 'number':
-        return (
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <input
-              type="number"
-              name={field}
-              value={formData[field] || ''}
-              onChange={(e) => handleFieldChange(field, e.target.value)}
-              min={config.min}
-              max={config.max}
-              required
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                fontSize: '1rem'
-              }}
-            />
-            {config.suffix && (
-              <span style={{ marginLeft: '0.5rem' }}>{config.suffix}</span>
-            )}
-          </div>
-        )
-
-      default:
-        return (
-          <input
-            type="text"
-            name={field}
-            value={formData[field] || ''}
-            onChange={(e) => handleFieldChange(field, e.target.value)}
-            required
-            placeholder={`Enter ${field.toLowerCase()}`}
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              fontSize: '1rem'
-            }}
-          />
-        )
-    }
-  }
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateClubData({ specs: formData });
-    navigate('/submission-details', { state: { payload: { ...clubData, specs: formData } } });
+    
+    // Update clubData with form values
+    updateClubData({
+      ...clubData,
+      specs: {
+        ...clubData.specs,
+        ...formData
+      }
+    });
+
+    // Log the updated data
+    console.log('Updated clubData before navigation:', clubData);
+
+    // Navigate to submission details
+    navigate('/submission-details');
+  };
+
+  if (!clubData?.requiredFields || Object.keys(clubData.requiredFields).length === 0) {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <h1>No Template Found</h1>
+        <p>Please scan a valid club barcode first.</p>
+      </div>
+    );
   }
 
   return (
-    <div style={{
-      height: '100vh',
-      width: '100%',
-      padding: '1rem',
-      background: '#f5f5f5',
-      overflowY: 'auto',
-    }}>
-      <h1>Enter Specifications</h1>
-      <div style={{ marginBottom: '1rem' }}>
-        <p><strong>SKU:</strong> {sku}</p>
-        <p><strong>Product Type:</strong> {clubType ? clubType.charAt(0).toUpperCase() + clubType.slice(1) : 'Unknown'}</p>
-      </div>
+    <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
+      <h1 style={{ marginBottom: '2rem' }}>Enter Specifications</h1>
+      
+      <form onSubmit={handleSubmit}>
+        {/* Club Info Section */}
+        <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Club Information</h3>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>SKU:</strong> {clubData.sku}
+          </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>Type:</strong> {clubData.productType}
+          </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>Manufacturer:</strong> {clubData.manufacturer}
+          </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>Model:</strong> {clubData.model}
+          </div>
+        </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1rem' }}>
-        {images.map((image, index) => (
-          <img
-            key={index}
-            src={image}
-            alt={`Captured ${index + 1}`}
-            style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px' }}
-          />
-        ))}
-      </div>
-
-      {clubType ? (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: '0 auto' }}>
-          <div style={{ 
-            display: 'grid', 
-            gap: '1rem',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))'
-          }}>
-            {fields.map((field) => (
-              <div 
-                key={field} 
-                style={{ 
-                  background: 'grey',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        {/* Required Fields Section */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Required Specifications</h3>
+          {Object.entries(clubData.requiredFields || {}).map(([key, field]) => (
+            <div key={key} style={{ marginBottom: '1.5rem' }}>
+              <label
+                htmlFor={key}
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 'bold'
                 }}
               >
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-                  {field.charAt(0).toUpperCase() + field.slice(1)}:
-                </label>
-                {renderField(field)}
-              </div>
-            ))}
-          </div>
-
-          <Button
-            type="submit"
-            style={{
-              marginTop: '2rem',
-              padding: '0.75rem 1.5rem',
-              background: '#007AFF',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              width: '100%',
-              fontSize: '1rem'
-            }}
-          >
-            Submit Specifications
-          </Button>
-        </form>
-      ) : (
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '2rem', 
-          background: 'white', 
-          borderRadius: '8px',
-          marginTop: '1rem' 
-        }}>
-          <p>Unable to determine product type from SKU. Please check the SKU and try again.</p>
+                {field.key.replace(/_/g, ' ').toUpperCase()}:
+              </label>
+              <input
+                type="text"
+                id={key}
+                name={key}
+                value={formData[key] || ''}
+                onChange={handleInputChange}
+                required
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                  fontSize: '1rem'
+                }}
+              />
+            </div>
+          ))}
         </div>
-      )}
+
+        {/* Additional Information Section */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Additional Information</h3>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label
+              htmlFor="location_tag"
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: 'bold'
+              }}
+            >
+              LOCATION TAG:
+            </label>
+            <input
+              type="text"
+              id="location_tag"
+              name="location_tag"
+              value={formData.location_tag || ''}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                fontSize: '1rem'
+              }}
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          style={{
+            background: '#007AFF',
+            color: 'white',
+            padding: '1rem 2rem',
+            borderRadius: '8px',
+            border: 'none',
+            fontSize: '1.1rem',
+            cursor: 'pointer',
+            width: '100%'
+          }}
+        >
+          Review And Upload
+        </button>
+      </form>
     </div>
-  )
+  );
 }

@@ -3,29 +3,52 @@ import React, { createContext, useContext, useState } from 'react'
 const GlobalStateContext = createContext()
 
 export function GlobalStateProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(null)
   const [clubData, setClubData] = useState({
     sku: '',
-    type: null, // Add type to track the club type
-    images: [],
-    specs: {
-      brand: '',
-      model: '',
-      year: '',
-      condition: '',
-      flex: '',
-      shaftInfo: '',
-      headcover: false,
-    },
+    productType: '',
+    manufacturer: '',
+    requiredFields: {},
+    specs: {},
+    images: []
   })
 
+  const updateClubData = (data) => {
+    setClubData(prev => ({
+      ...prev,
+      ...data
+    }))
+    console.log('Updated clubData:', {
+      ...clubData,
+      ...data
+    })
+  }
+
+  const resetClubData = () => {
+    setClubData({
+      sku: '',
+      productType: '',
+      manufacturer: '',
+      requiredFields: {},
+      specs: {},
+      images: []
+    })
+  }
+
   return (
-    <GlobalStateContext.Provider value={{ currentUser, setCurrentUser, clubData, setClubData }}>
+    <GlobalStateContext.Provider value={{ 
+      clubData, 
+      updateClubData,
+      resetClubData 
+    }}>
       {children}
     </GlobalStateContext.Provider>
   )
 }
 
-export function useGlobalState() {
-  return useContext(GlobalStateContext)
+export function useClubData() {
+  const context = useContext(GlobalStateContext)
+  if (!context) {
+    throw new Error('useClubData must be used within a GlobalStateProvider')
+  }
+  return context
 }

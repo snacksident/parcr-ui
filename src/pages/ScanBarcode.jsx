@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useClubData } from '../hooks/useClubData'
+import { useClubData } from '../context/GlobalStateContext'
 import NewBarcodeScanner from '../components/NewBarcodeScanner'
 import axios from 'axios'
 
@@ -15,63 +15,41 @@ export default function ScanBarcode() {
 
   const getProductTemplate = async (sku) => {
     try {
-      console.log('Fetching template for complete SKU:', sku);
+      console.log('Fetching template for SKU:', sku);
       const response = await axios.get(`${baseUrl}/product-template/${sku}`);
       
-      console.log('Full template response:', {
-        success: response.data.success,
-        template: response.data.data,
-        rawMetafields: response.data.data?.rawMetafields,
-        searchedSku: sku // Add this for debugging
-      });
-
       if (response.data.success) {
-        const template = response.data.data;
-        // Update club data with template information
+        const templateData = response.data.data;
+        console.log('Template data:', templateData);
+        
+        // Store all template data in clubData
         updateClubData({
-          sku, // Use the complete SKU
-          type: template.productType,
+          sku: templateData.sku,
+          productType: templateData.productType,
+          manufacturer: templateData.manufacturer,
+          requiredFields: templateData.requiredFields,
+          model: templateData.preservedFields.model,
           specs: {
-            manufacturer: template.manufacturer,
-            model: template.specs?.model || '',
-            condition: template.specs?.condition || '',
-            'club number': template.specs?.club_number || '',
-            'grip make/model/size': template.specs?.grip_make_model_size || '',
-            'club length': template.specs?.club_length || '',
-            'shaft material': template.specs?.shaft_material || '',
-            'shaft make/model': template.specs?.shaft_make_model || '',
-            loft: template.specs?.loft || '',
-            flex: template.specs?.shaft_flex || '',
-            bounce: template.specs?.bounce || '',
-            handedness: template.specs?.handedness || '',
-            initials: template.specs?.initials || '',
-            'custom label': template.specs?.custom_label || '',
-            'additional notes': template.specs?.additional_notes || ''
+            putterType: null  // Initialize putterType as null
           }
         });
+
+        navigate('/photos');
       }
     } catch (error) {
-      console.error('Error fetching template:', {
-        sku, // Log the SKU that failed
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-      updateClubData({ sku });
+      console.error('Error fetching template:', error);
     }
   };
 
   const handleSave = async (barcodeData) => {
     console.log('Scanned Barcode:', barcodeData)
     await getProductTemplate(barcodeData)
-    navigate('/photos')
   };
 
   const handleManualEntry = async () => {
     if (manualSKU) {
       await getProductTemplate(manualSKU)
       setShowModal(false)
-      navigate('/photos')
     } else {
       setError('Please enter a valid SKU.')
     }

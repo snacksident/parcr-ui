@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { useClubData } from '../hooks/useClubData'
+import { useNavigate } from 'react-router-dom'
+import { useClubData } from '../context/GlobalStateContext'
 import axios from 'axios'
 
 const baseUrl = 'https://parcr-backend.onrender.com/api'
@@ -34,295 +34,228 @@ const base64ToFile = (base64String, index) => {
 };
 
 export default function SubmissionDetails() {
-  const location = useLocation()
   const navigate = useNavigate()
-  const { resetClubData } = useClubData()
-  const payload = location.state?.payload
+  const { clubData, resetClubData } = useClubData()
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState(null)
   const [uploadStatus, setUploadStatus] = useState('')
 
-  const transformDataForShopify = (payload) => {
-    if (!payload || !payload.specs) {
-      throw new Error('Invalid payload data');
+  const transformDataForShopify = () => {
+    if (!clubData.specs) {
+      throw new Error('No specification data available');
     }
 
-    const specs = {
-      custom_label: payload.specs['custom label'] || '',
-      initials: payload.specs.initials || '',
-      club_number: payload.specs['club number'] || '',
-      grip_make_model_size: payload.specs['grip make/model/size'] || '',
-      club_length: payload.specs['club length'] || '',
-      shaft_material: payload.specs['shaft material'] || '',
-      shaft_make_model: payload.specs['shaft make/model'] || '',
-      loft: payload.specs.loft || '',
-      flex: payload.specs.flex || '',
-      model: payload.specs.model || '',
-      manufacturer: payload.specs.manufacturer || '',
-      condition: payload.specs.condition || '',
-      handedness: payload.specs.handedness || '',
-      bounce: payload.specs.bounce || '',
-      additional_notes: payload.specs['additional notes'] || ''
-    };
+    // Create title components array
+    const titleComponents = [];
+    
+    // Add LEFTY prefix if left-handed
+    if (clubData.specs.handedness?.toLowerCase() === 'left-handed') {
+      titleComponents.push('LEFTY');
+    }
+
+    // Add core product info
+    if (clubData.specs.model) titleComponents.push(clubData.specs.model);
+    if (clubData.manufacturer) titleComponents.push(clubData.manufacturer);
+    
+    // Add shaft info
+    if (clubData.specs.flex) titleComponents.push(clubData.specs.flex);
+    if (clubData.specs.shaft_material) titleComponents.push(clubData.specs.shaft_material);
+    
+    // Add length for specific club types
+    const singleClubTypes = ['irons', 'wedges', 'putters'];
+    if (singleClubTypes.includes(clubData.productType?.toLowerCase()) && clubData.specs.item_length) {
+      titleComponents.push(`${clubData.specs.item_length}"`);
+    }
+    
+    // Add condition
+    if (clubData.specs.condition) titleComponents.push(clubData.specs.condition);
+
+    // Create custom label
+    const customLabel = [
+      clubData.sku,
+      clubData.specs.custom_label,
+      clubData.specs.location_tag
+    ].filter(Boolean).join(' - ');
 
     return {
-      title: [
-        specs.manufacturer,
-        specs.model,
-        specs.club_number,
-        payload.type
-      ].filter(Boolean).join(' '),
-      productType: payload.type,
-      specs: specs,
-      sku: payload.sku,
+      title: titleComponents.filter(Boolean).join(' '),
+      productType: clubData.productType,
+      specs: {
+        ...clubData.specs,
+        custom_label: customLabel
+      },
+      sku: clubData.sku,
       descriptionHtml: `
         <div>
           <h3>Product Specifications:</h3>
           <ul>
-            ${Object.entries(specs)
-              .filter(([_, value]) => value)
+            ${Object.entries(clubData.specs)
+              .filter(([key, value]) => value && key !== 'location_tag') // Exclude location_tag from description
               .map(([key, value]) => `<li><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong>: ${value}</li>`)
               .join('')}
           </ul>
         </div>
       `,
-      vendor: specs.manufacturer || 'Unknown',
+      vendor: clubData.manufacturer || 'Unknown',
       tags: [
-        payload.type,
-        specs.manufacturer,
-        specs.model,
-        specs.flex,
-        specs.shaft_material,
-        specs.condition
+        clubData.productType,
+        clubData.manufacturer,
+        clubData.specs.model,
+        clubData.specs.flex,
+        clubData.specs.shaft_material,
+        clubData.specs.condition,
+        clubData.specs.handedness,
+        customLabel
       ].filter(Boolean)
     };
   };
 
   const handleCreateListing = async () => {
     try {
-      setIsCreating(true)
-      setError(null)
-      setUploadStatus('Creating listing...')
+      setIsCreating(true);
+      setError(null);
+      setUploadStatus('Creating listing...');
 
-      // Step 1: Create listing without images
-      const productData = transformDataForShopify(payload)
-      console.log('Creating listing:', productData)
+      const productData = transformDataForShopify();
+      console.log('Sending product data:', productData);
 
       const response = await axios.post(`${baseUrl}/create-listing`, productData, {
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      console.log('Server response:', response.data);
 
       if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to create listing')
+        throw new Error(response.data.error || 'Failed to create listing');
       }
 
-      const productGid = response.data.data.id
-      const productId = productGid.split('/').pop()
-      
-      // Step 2: If we have images and a productId, upload them
-      if (productId && payload.images?.length > 0) {
-        setUploadStatus('Preparing images for upload...');
-        
-        try {
-          const formData = new FormData();
-          
-          // Format the productId
-          const formattedId = productId.includes('gid://') 
-            ? productId 
-            : `gid://shopify/Product/${productId}`;
-          
-          formData.append('productId', formattedId);
+      // Extract the numeric productId from the nested data object
+      const productId = response.data.data.productId;
+      console.log('Extracted productId:', productId);
 
-          // Prepare image metadata for staged uploads
-          const imageInputs = payload.images.map((base64String, index) => {
-            const file = base64ToFile(base64String, index);
-            formData.append('images', file);
-            
-            // Return metadata for each image
-            return {
-              filename: file.name,
-              mimeType: file.type,
-              fileSize: file.size.toString(),
-              resource: 'IMAGE'
-            };
-          });
-
-          // Add image metadata to FormData
-          formData.append('imageMetadata', JSON.stringify(imageInputs));
-
-          console.log('Uploading images with metadata:', {
-            productId: formattedId,
-            imageCount: imageInputs.length,
-            metadata: imageInputs
-          });
-
-          const imageResponse = await axios.post(`${baseUrl}/add-product-images`, formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            },
-            timeout: 60000
-          });
-
-          if (!imageResponse.data.success) {
-            throw new Error(imageResponse.data.message || 'Failed to upload images');
-          }
-
-          console.log('Images uploaded successfully:', imageResponse.data);
-        } catch (imageError) {
-          console.error('Error uploading images:', imageError);
-          setError(`Image upload failed: ${imageError.response?.data?.message || imageError.message}`);
-        }
+      if (!productId) {
+        throw new Error('No product ID received from server');
       }
 
-      // Success - proceed even if images failed
-      alert('Listing created successfully!')
-      resetClubData()
-      navigate('/scan')
+      if (clubData.images?.length > 0) {
+        setUploadStatus('Uploading images...');
+        await handleImageUpload(productId);
+      }
+
+      // Success
+      alert('Listing created successfully!');
+      resetClubData();
+      navigate('/scan');
     } catch (error) {
-      console.error('Error creating listing:', error)
-      setError(error.response?.data?.message || error.message)
+      console.error('Error creating listing:', error);
+      setError(error.response?.data?.message || error.message);
     } finally {
-      setIsCreating(false)
-      setUploadStatus('')
+      setIsCreating(false);
+      setUploadStatus('');
     }
-  }
+  };
 
-  if (!payload) {
+  const handleImageUpload = async (productId) => {
+    try {
+      // Ensure productId is a string and extract only the numeric part if needed
+      const cleanId = String(productId).split('/').pop();
+      console.log('Clean ID for image upload:', cleanId);
+
+      const formData = new FormData();
+      formData.append('productId', cleanId);
+
+      // Debug log the actual value being sent
+      console.log('FormData productId value:', formData.get('productId'));
+
+      // Add images to formData
+      clubData.images.forEach((base64String, index) => {
+        const file = base64ToFile(base64String, index);
+        formData.append('images', file);
+      });
+
+      const response = await axios.post(`${baseUrl}/add-product-images`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000
+      });
+
+      console.log('Image upload response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error in handleImageUpload:', error);
+      throw error;
+    }
+  };
+
+  if (!clubData.specs) {
     return (
       <div style={{ padding: '2rem' }}>
         <h1>No Submission Data</h1>
-        <p>It seems there is no data to display. Please try submitting again.</p>
+        <p>Please complete the specifications form first.</p>
       </div>
-    )
+    );
   }
 
   return (
-    <div style={{ 
-      padding: '2rem',
-      maxWidth: '800px',
-      margin: '0 auto',
-      background: '#fff',
-      minHeight: '100vh'
-    }}>
-      <h1 style={{ 
-        borderBottom: '2px solid #007AFF',
-        paddingBottom: '0.5rem',
-        marginBottom: '2rem',
-        color: '#333'
-      }}>
-        Submission Details
-      </h1>
-
-      {error && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '1rem',
-          background: '#ffebee',
-          color: '#d32f2f',
-          borderRadius: '4px'
-        }}>
-          {error}
+    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+      <h1>Review Submission</h1>
+      
+      {/* Basic Info */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2>Product Information</h2>
+        <div>
+          <strong>SKU:</strong> {clubData.sku}<br />
+          <strong>Type:</strong> {clubData.productType}<br />
+          <strong>Manufacturer:</strong> {clubData.manufacturer}
         </div>
-      )}
+      </section>
 
-      {uploadStatus && (
-        <div style={{
-          padding: '1rem',
-          marginBottom: '1rem',
-          background: '#e3f2fd',
-          color: '#1565c0',
-          borderRadius: '4px'
-        }}>
-          {uploadStatus}
-        </div>
-      )}
-
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ color: '#666', fontSize: '1.2rem', marginBottom: '1rem' }}>
-          Product Information
-        </h2>
-        <div style={{ 
-          background: '#f8f9fa',
-          padding: '1.5rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <strong>SKU:</strong> {payload.sku}
+      {/* Specifications */}
+      <section style={{ marginBottom: '2rem' }}>
+        <h2>Specifications</h2>
+        {Object.entries(clubData.specs).map(([key, value]) => (
+          <div key={key}>
+            <strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {value}
           </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <strong>Type:</strong> {payload.type && payload.type.charAt(0).toUpperCase() + payload.type.slice(1)}
-          </div>
-        </div>
-      </div>
+        ))}
+      </section>
 
-      <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ color: '#666', fontSize: '1.2rem', marginBottom: '1rem' }}>
-          Specifications
-        </h2>
-        <div style={{ 
-          background: '#f8f9fa',
-          padding: '1.5rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          {Object.entries(payload.specs || {}).map(([key, value]) => (
-            <div key={key} style={{ marginBottom: '0.5rem' }}>
-              <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{' '}
-              {value}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {payload.images && payload.images.length > 0 && (
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ color: '#666', fontSize: '1.2rem', marginBottom: '1rem' }}>
-            Images
-          </h2>
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-            gap: '1rem'
-          }}>
-            {payload.images.map((image, index) => (
+      {/* Images */}
+      {clubData.images?.length > 0 && (
+        <section style={{ marginBottom: '2rem' }}>
+          <h2>Images ({clubData.images.length})</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+            {clubData.images.map((img, idx) => (
               <img
-                key={index}
-                src={image}
-                alt={`Product ${index + 1}`}
-                style={{
-                  width: '100%',
-                  height: '150px',
-                  objectFit: 'cover',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                }}
+                key={idx}
+                src={img}
+                alt={`Product ${idx + 1}`}
+                style={{ width: '100%', height: '150px', objectFit: 'cover' }}
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
+      {/* Status Messages */}
+      {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
+      {uploadStatus && <div style={{ marginBottom: '1rem' }}>{uploadStatus}</div>}
+
+      {/* Submit Button */}
       <button
         onClick={handleCreateListing}
         disabled={isCreating}
         style={{
-          background: isCreating ? '#cccccc' : '#007AFF',
-          color: 'white',
-          padding: '1rem 2rem',
-          borderRadius: '8px',
-          border: 'none',
-          fontSize: '1.1rem',
-          cursor: isCreating ? 'not-allowed' : 'pointer',
           width: '100%',
-          marginTop: '2rem',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          padding: '1rem',
+          background: isCreating ? '#ccc' : '#007AFF',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: isCreating ? 'not-allowed' : 'pointer'
         }}
       >
         {isCreating ? uploadStatus || 'Creating Listing...' : 'Create Shopify Listing'}
       </button>
     </div>
-  )
+  );
 }
