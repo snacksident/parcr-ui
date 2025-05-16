@@ -7,24 +7,21 @@ export default function EnterSpecs() {
   const { clubData, updateClubData } = useClubData()
   const [formData, setFormData] = useState({})
 
-  console.log(clubData)
-
-  // Initialize form with required fields
   useEffect(() => {
     console.log('Current clubData:', clubData);
-    
     if (clubData?.requiredFields) {
-      // Convert requiredFields to initial form values
+      console.log('Required Fields:', clubData.requiredFields);
+      // Initialize form with current values from requiredFields
       const initialFormData = Object.entries(clubData.requiredFields)
         .reduce((acc, [key, field]) => ({
           ...acc,
-          [key]: field.currentValue === 'COMING SOON' ? '' : field.currentValue
+          [key]: field?.currentValue === 'COMING SOON' ? '' : field?.currentValue || ''
         }), {});
 
+      console.log('Initial Form Data:', initialFormData);
       setFormData(initialFormData);
-      console.log('Initialized form with fields:', initialFormData);
     }
-  }, [clubData]); // Watch entire clubData object
+  }, [clubData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -37,20 +34,84 @@ export default function EnterSpecs() {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Update clubData with form values
+    // Update the requiredFields with new values
+    const updatedRequiredFields = Object.entries(clubData.requiredFields)
+      .reduce((acc, [key, field]) => ({
+        ...acc,
+        [key]: {
+          ...field,
+          currentValue: formData[key] || field.currentValue
+        }
+      }), {});
+
+    // Add location_tag and additional_notes to requiredFields if they don't exist
+    if (formData.location_tag) {
+      updatedRequiredFields.location_tag = {
+        key: 'location_tag',
+        type: 'single_line_text_field',
+        namespace: 'custom',
+        currentValue: formData.location_tag
+      };
+    }
+
+    // Update clubData with all values
     updateClubData({
       ...clubData,
-      specs: {
-        ...clubData.specs,
-        ...formData
+      requiredFields: updatedRequiredFields,
+      preservedFields: {
+        ...clubData.preservedFields,
+        additionalNotes: formData.additional_notes || '' // Store additional notes in preservedFields
       }
     });
 
-    // Log the updated data
-    console.log('Updated clubData before navigation:', clubData);
+    console.log('Submitting data:', {
+      requiredFields: updatedRequiredFields,
+      preservedFields: clubData.preservedFields,
+      formData
+    });
 
-    // Navigate to submission details
     navigate('/submission-details');
+  };
+
+  const renderRequiredFields = () => {
+    if (!clubData?.requiredFields) return null;
+
+    return Object.entries(clubData.requiredFields).map(([key, field]) => {
+      // Skip if field is undefined
+      if (!field || key === 'handedness') return null;
+
+      const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase();
+
+      return (
+        <div key={key} style={{ marginBottom: '1.5rem' }}>
+          <label
+            htmlFor={key}
+            style={{
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: 'bold'
+            }}
+          >
+            {displayLabel}:
+          </label>
+          <input
+            type="text"
+            id={key}
+            name={key}
+            value={formData[key] || ''}
+            onChange={handleInputChange}
+            required
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+      );
+    });
   };
 
   if (!clubData?.requiredFields || Object.keys(clubData.requiredFields).length === 0) {
@@ -82,40 +143,15 @@ export default function EnterSpecs() {
           <div style={{ marginBottom: '0.5rem' }}>
             <strong>Model:</strong> {clubData.model}
           </div>
+          <div style={{ marginBottom: '0.5rem' }}>
+            <strong>Handedness:</strong> {clubData.requiredFields?.handedness || 'N/A'}
+          </div>
         </div>
 
         {/* Required Fields Section */}
         <div style={{ marginBottom: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Required Specifications</h3>
-          {Object.entries(clubData.requiredFields || {}).map(([key, field]) => (
-            <div key={key} style={{ marginBottom: '1.5rem' }}>
-              <label
-                htmlFor={key}
-                style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {field.key.replace(/_/g, ' ').toUpperCase()}:
-              </label>
-              <input
-                type="text"
-                id={key}
-                name={key}
-                value={formData[key] || ''}
-                onChange={handleInputChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  borderRadius: '4px',
-                  border: '1px solid #ccc',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
-          ))}
+          {renderRequiredFields()}
         </div>
 
         {/* Additional Information Section */}
@@ -146,6 +182,39 @@ export default function EnterSpecs() {
                 border: '1px solid #ccc',
                 fontSize: '1rem'
               }}
+            />
+          </div>
+        </div>
+
+        {/* Additional Notes Section */}
+        <div style={{ marginBottom: '2rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Additional Notes</h3>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label
+              htmlFor="additional_notes"
+              style={{
+                display: 'block',
+                marginBottom: '0.5rem',
+                fontWeight: 'bold'
+              }}
+            >
+              ADDITIONAL NOTES:
+            </label>
+            <textarea
+              id="additional_notes"
+              name="additional_notes"
+              value={formData.additional_notes || ''}
+              onChange={handleInputChange}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                fontSize: '1rem',
+                minHeight: '100px',
+                resize: 'vertical'
+              }}
+              placeholder="Enter any additional notes about this club..."
             />
           </div>
         </div>

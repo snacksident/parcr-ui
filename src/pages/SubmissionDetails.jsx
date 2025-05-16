@@ -41,148 +41,179 @@ export default function SubmissionDetails() {
   const [uploadStatus, setUploadStatus] = useState('')
 
   const transformDataForShopify = () => {
-    if (!clubData.specs) {
+    if (!clubData.requiredFields) {
       throw new Error('No specification data available');
     }
 
     // Create title components array
     const titleComponents = [];
-    
+
     // Add LEFTY prefix if left-handed
-    if (clubData.specs.handedness?.toLowerCase() === 'left-handed') {
+    if (clubData.specs?.handedness === 'Left-Handed') {
       titleComponents.push('LEFTY');
     }
 
     // Add core product info
-    if (clubData.specs.model) titleComponents.push(clubData.specs.model);
+    if (clubData.model) titleComponents.push(clubData.model);
     if (clubData.manufacturer) titleComponents.push(clubData.manufacturer);
-    
-    // Add shaft info
-    if (clubData.specs.flex) titleComponents.push(clubData.specs.flex);
-    if (clubData.specs.shaft_material) titleComponents.push(clubData.specs.shaft_material);
-    
-    // Add length for specific club types
-    const singleClubTypes = ['irons', 'wedges', 'putters'];
-    if (singleClubTypes.includes(clubData.productType?.toLowerCase()) && clubData.specs.item_length) {
-      titleComponents.push(`${clubData.specs.item_length}"`);
-    }
-    
-    // Add condition
-    if (clubData.specs.condition) titleComponents.push(clubData.specs.condition);
+
+    // Add specs in order
+    const specsToAdd = [
+      clubData.requiredFields.club_number?.currentValue,
+      clubData.requiredFields.flex?.currentValue,
+      clubData.requiredFields.shaft_make_model?.currentValue,
+      clubData.requiredFields.item_length?.currentValue ? `${clubData.requiredFields.item_length.currentValue}"` : null,
+      clubData.requiredFields.condition?.currentValue,
+    ]
+
+    titleComponents.push(...specsToAdd.filter(Boolean))
 
     // Create custom label
     const customLabel = [
       clubData.sku,
-      clubData.specs.custom_label,
-      clubData.specs.location_tag
-    ].filter(Boolean).join(' - ');
+      clubData.requiredFields.custom_label?.currentValue,
+      clubData.requiredFields.location_tag?.currentValue
+    ].filter(Boolean).join(' - ')
+
+    // Format metafields for Shopify - ensure all fields are included
+    const metafields = [];
+
+    // Add all required fields as metafields
+    Object.entries(clubData.requiredFields).forEach(([key, field]) => {
+      if (field.currentValue && typeof field.currentValue === 'string') {
+        metafields.push({
+          key: key,
+          value: field.currentValue,
+          type: "single_line_text_field",
+          namespace: "custom"
+        });
+      }
+    });
+
+    // Add location tag if it exists
+    if (clubData.requiredFields.location_tag?.currentValue) {
+      metafields.push({
+        key: 'location_tag',
+        value: clubData.requiredFields.location_tag.currentValue,
+        type: 'single_line_text_field',
+        namespace: 'custom'
+      });
+    }
+
+    // Add handedness from specs
+    if (clubData.specs?.handedness) {
+      metafields.push({
+        key: 'handedness',
+        value: clubData.specs.handedness,
+        type: 'single_line_text_field',
+        namespace: 'custom'
+      });
+    }
+
+    // Add additional notes if present
+    if (clubData.preservedFields.additionalNotes) {
+      metafields.push({
+        key: 'additional_notes',
+        value: clubData.preservedFields.additionalNotes,
+        type: 'single_line_text_field',
+        namespace: 'custom'
+      });
+    }
+
+    // Add debugging log
+    console.log('Prepared metafields:', metafields);
 
     return {
       title: titleComponents.filter(Boolean).join(' '),
       productType: clubData.productType,
-      specs: {
-        ...clubData.specs,
-        custom_label: customLabel
-      },
+      metafields: metafields,
       sku: clubData.sku,
-      descriptionHtml: `
-        <div>
-          <h3>Product Specifications:</h3>
-          <ul>
-            ${Object.entries(clubData.specs)
-              .filter(([key, value]) => value && key !== 'location_tag') // Exclude location_tag from description
-              .map(([key, value]) => `<li><strong>${key.replace(/_/g, ' ').toUpperCase()}</strong>: ${value}</li>`)
-              .join('')}
-          </ul>
-        </div>
-      `,
       vendor: clubData.manufacturer || 'Unknown',
       tags: [
         clubData.productType,
         clubData.manufacturer,
-        clubData.specs.model,
-        clubData.specs.flex,
-        clubData.specs.shaft_material,
-        clubData.specs.condition,
-        clubData.specs.handedness,
+        clubData.model,
+        clubData.requiredFields.flex?.currentValue,
+        clubData.requiredFields.shaft_material?.currentValue,
         customLabel
-      ].filter(Boolean)
-    };
-  };
+      ].filter(Boolean),
+      status: 'DRAFT',
+      options: [{
+        name: 'Condition',
+        values: [clubData.requiredFields.condition?.currentValue || 'New']
+      }]
+    }
+  }
 
   const handleCreateListing = async () => {
     try {
       setIsCreating(true);
       setError(null);
-      setUploadStatus('Creating listing...');
 
+      // Step 1: Create basic product
+      setUploadStatus('Creating base listing...');
       const productData = transformDataForShopify();
-      console.log('Sending product data:', productData);
+      console.log('Sending initial product data:', productData);
 
-      const response = await axios.post(`${baseUrl}/create-listing`, productData, {
-        headers: { 'Content-Type': 'application/json' }
+      const createResponse = await axios.post(`${baseUrl}/create-listing`, {
+        title: productData.title,
+        productType: productData.productType,
+        sku: productData.sku,
+        vendor: productData.vendor,
+        tags: productData.tags,
+        status: productData.status
       });
 
-      console.log('Server response:', response.data);
+      console.log('Create product response:', createResponse.data);
 
-      if (!response.data.success) {
-        throw new Error(response.data.error || 'Failed to create listing');
+      if (!createResponse.data.success) {
+        throw new Error(createResponse.data.error || 'Failed to create listing');
       }
 
-      // Extract the numeric productId from the nested data object
-      const productId = response.data.data.productId;
-      console.log('Extracted productId:', productId);
+      const productId = createResponse.data.data.id;
+      console.log('Created product ID:', productId);
 
-      if (!productId) {
-        throw new Error('No product ID received from server');
+      // Step 2: Add metafields
+      if (productData.metafields?.length > 0) {
+        setUploadStatus('Adding product details...');
+        console.log('Adding metafields:', productData.metafields);
+        
+        await axios.post(`${baseUrl}/add-product-metafields`, {
+          productId: productId,
+          metafields: productData.metafields
+        });
       }
 
+      // Step 3: Add images
       if (clubData.images?.length > 0) {
         setUploadStatus('Uploading images...');
-        await handleImageUpload(productId);
+        const formData = new FormData();
+        formData.append('productId', productId);
+
+        // Convert base64 images to files and append to formData
+        for (let i = 0; i < clubData.images.length; i++) {
+          const file = base64ToFile(clubData.images[i], i);
+          formData.append('images', file);
+        }
+
+        console.log('Uploading images for product:', productId);
+        await axios.post(`${baseUrl}/add-product-images`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 60000
+        });
       }
 
       // Success
+      setUploadStatus('Success!');
       alert('Listing created successfully!');
       resetClubData();
       navigate('/scan');
     } catch (error) {
-      console.error('Error creating listing:', error);
+      console.error('Error in product creation:', error);
       setError(error.response?.data?.message || error.message);
     } finally {
       setIsCreating(false);
       setUploadStatus('');
-    }
-  };
-
-  const handleImageUpload = async (productId) => {
-    try {
-      // Ensure productId is a string and extract only the numeric part if needed
-      const cleanId = String(productId).split('/').pop();
-      console.log('Clean ID for image upload:', cleanId);
-
-      const formData = new FormData();
-      formData.append('productId', cleanId);
-
-      // Debug log the actual value being sent
-      console.log('FormData productId value:', formData.get('productId'));
-
-      // Add images to formData
-      clubData.images.forEach((base64String, index) => {
-        const file = base64ToFile(base64String, index);
-        formData.append('images', file);
-      });
-
-      const response = await axios.post(`${baseUrl}/add-product-images`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 60000
-      });
-
-      console.log('Image upload response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error in handleImageUpload:', error);
-      throw error;
     }
   };
 
@@ -195,6 +226,16 @@ export default function SubmissionDetails() {
     );
   }
 
+  const generateTitle = () => {
+    try {
+      const shopifyData = transformDataForShopify();
+      return shopifyData.title;
+    } catch (error) {
+      console.error('Error generating title:', error);
+      return 'Error generating title';
+    }
+  };
+
   return (
     <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h1>Review Submission</h1>
@@ -203,27 +244,45 @@ export default function SubmissionDetails() {
       <section style={{ marginBottom: '2rem' }}>
         <h2>Product Information</h2>
         <div>
+          <strong>Title:</strong> {generateTitle()}<br />
           <strong>SKU:</strong> {clubData.sku}<br />
           <strong>Type:</strong> {clubData.productType}<br />
-          <strong>Manufacturer:</strong> {clubData.manufacturer}
+          <strong>Manufacturer:</strong> {clubData.manufacturer}<br />
+          <strong>Model:</strong> {clubData.model}<br />
+          <strong>Handedness:</strong> {clubData.specs?.handedness}
         </div>
       </section>
 
-      {/* Specifications */}
+      {/* Required Fields */}
       <section style={{ marginBottom: '2rem' }}>
         <h2>Specifications</h2>
-        {Object.entries(clubData.specs).map(([key, value]) => (
-          <div key={key}>
-            <strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {value}
-          </div>
-        ))}
+        {Object.entries(clubData.requiredFields)
+          .filter(([_, field]) => field.currentValue && typeof field.currentValue === 'string')
+          .map(([key, field]) => (
+            <div key={key}>
+              <strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {field.currentValue}
+            </div>
+          ))
+        }
       </section>
+
+      {/* Additional Notes */}
+      {clubData.preservedFields.additionalNotes && (
+        <section style={{ marginBottom: '2rem' }}>
+          <h2>Additional Notes</h2>
+          <p>{clubData.preservedFields.additionalNotes}</p>
+        </section>
+      )}
 
       {/* Images */}
       {clubData.images?.length > 0 && (
         <section style={{ marginBottom: '2rem' }}>
           <h2>Images ({clubData.images.length})</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+            gap: '1rem' 
+          }}>
             {clubData.images.map((img, idx) => (
               <img
                 key={idx}

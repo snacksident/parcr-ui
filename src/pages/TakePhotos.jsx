@@ -24,6 +24,10 @@ export default function TakePhotos() {
     // Update clubData with handedness - no need to uppercase since we're passing correct format
     updateClubData({
       ...clubData,
+      requiredFields: {
+        ...clubData.requiredFields,
+        handedness: handedness
+      },
       specs: {
         ...clubData.specs,
         handedness: handedness
@@ -59,7 +63,7 @@ export default function TakePhotos() {
 
   useEffect(() => {
     console.log('Current clubData:', {
-      handedness: clubData.specs?.handedness,
+      handedness: clubData.requiredFields?.handedness,
       putterType: clubData.specs?.putterType,
       allSpecs: clubData.specs
     });
