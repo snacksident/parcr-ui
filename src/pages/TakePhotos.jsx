@@ -28,7 +28,7 @@ export default function TakePhotos() {
       'hybrids',
       'iron sets',
       'putters'
-    ];
+    ]
     return typesWithHeadcovers.includes(type?.toLowerCase())
   }
 
@@ -98,23 +98,23 @@ export default function TakePhotos() {
     } else {
       setCurrentStep(1);
     }
-  };
+  }
 
   useEffect(() => {
     console.log('Current clubData:', {
       handedness: clubData.requiredFields?.handedness,
       putterType: clubData.specs?.putterType,
       allSpecs: clubData.specs
-    });
-  }, [clubData.specs]);
+    })
+  }, [clubData.specs])
 
   const handleCapture = (img) => {
     setCapturedImage(img);
-  };
+  }
 
   const handleRetake = () => {
     setCapturedImage(null);
-  };
+  }
 
   const handleAccept = () => {
     const updatedImages = [...(clubData.images || []), capturedImage]
@@ -222,7 +222,7 @@ export default function TakePhotos() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   if (showHeadcoverPrompt) {

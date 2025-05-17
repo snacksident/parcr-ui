@@ -35,7 +35,12 @@ export function GlobalStateProvider({ children }) {
       // ... other required fields
     },
     images: [],
-    currentStep: 1
+    currentStep: 1,
+    specs: {
+      handedness: null,
+      putterType: null,
+      pingDotColor: null // Add this new field
+    }
   });
 
   const updateClubData = (newData) => {
@@ -98,9 +103,25 @@ export function GlobalStateProvider({ children }) {
         // ... other required fields
       },
       images: [],
-      currentStep: 1
+      currentStep: 1,
+      specs: {
+        handedness: null,
+        putterType: null,
+        pingDotColor: null // Add this new field
+      }
     })
   }
+
+  // Add a helper function to update specs
+  const updateSpecs = (newSpecs) => {
+    setClubData(prev => ({
+      ...prev,
+      specs: {
+        ...prev.specs,
+        ...newSpecs
+      }
+    }));
+  };
 
   return (
     <GlobalStateContext.Provider value={{ 
@@ -108,7 +129,8 @@ export function GlobalStateProvider({ children }) {
       updateClubData,
       updateRequiredField,
       updateCurrentStep,
-      resetClubData 
+      resetClubData,
+      updateSpecs // Add this to the context
     }}>
       {children}
     </GlobalStateContext.Provider>

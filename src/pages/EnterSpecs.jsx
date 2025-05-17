@@ -1,11 +1,35 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useClubData } from '../context/GlobalStateContext'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useClubData } from '../context/GlobalStateContext';
+import DotColorPrompt, { pingDotColors } from '../components/DotColorPrompt';
 
 export default function EnterSpecs() {
-  const navigate = useNavigate()
-  const { clubData, updateClubData } = useClubData()
-  const [formData, setFormData] = useState({})
+  const navigate = useNavigate();
+  const { clubData, updateClubData, updateSpecs } = useClubData();
+  const [formData, setFormData] = useState({});
+  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false);
+
+  const clubNumbers = [
+    '1-Wood', '2-Wood', '3-Wood', '3HL-Wood', '4-Wood', '5-Wood', '5HL-Wood',
+    '6-Wood', '7-Wood', '7HL-Wood', '8-Wood', '9-Wood', '11-Wood',
+    'Fairway Wood', 'Heavenwood', 'Utility Wood',
+    '1H', '2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H',
+    'Hybrid', 'Utility Iron',
+    '1-Iron', '2-Iron', '3-Iron', '4-Iron', '5-Iron', '6-Iron', '7-Iron', '8-Iron', '9-Iron', '10-Iron', '11-Iron',
+    'Iron Set',
+    'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge',
+    'Chipper', 'Putter', 'Complete Club Set',
+  ]
+  const flexOptions = [
+    'WEDGE', 'LADIES', 'SENIOR', 'REGULAR', 'STIFF', 'EXTRA STIFF',
+    'SOFT REGULAR', 'TOUR REGULAR', 'TOUR STIFF', 'TOUR EXTRA STIFF', 
+    'STIFF+', 'FIRM', 'STIFF REGULAR', 'UNIFLEX', 'REGULAR+', 'LIGHT', 'LIGHT TOUR',
+    'LITE', 'LADIES REGULAR', 'ULTRA LITE', 'JUNIOR', 'AUTOFLEX', 'COMBO FLEX',
+  ]
+
+  const shaftMaterials = [
+    'Graphite', 'Steel', 'Steelfiber', 'Hickory', 'Steel and Graphite'
+  ]
 
   useEffect(() => {
     console.log('Current clubData:', clubData);
@@ -16,12 +40,23 @@ export default function EnterSpecs() {
         .reduce((acc, [key, field]) => ({
           ...acc,
           [key]: field?.currentValue === 'COMING SOON' ? '' : field?.currentValue || ''
-        }), {})
+        }), {});
 
       console.log('Initial Form Data:', initialFormData);
       setFormData(initialFormData);
+
+      // Only show the dot color prompt if we haven't selected a color yet
+      if (
+        !clubData.specs?.pingDotColor && // Add this condition
+        clubData.manufacturer?.toUpperCase() === 'PING' && 
+        (clubData.productType === 'Individual Irons' || 
+         clubData.productType === 'Iron Set' || 
+         clubData.productType?.toUpperCase().includes('WEDGE'))
+      ) {
+        setShowDotColorPrompt(true);
+      }
     }
-  }, [clubData])
+  }, [clubData.requiredFields]); // Change dependency to only requiredFields
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -31,9 +66,45 @@ export default function EnterSpecs() {
     }))
   }
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  // Update the dot color selection handler
+  const handleDotColorSelect = React.useCallback((dot) => {
+    // Update specs with the selected dot color info
+    updateSpecs({
+      ...clubData.specs,
+      pingDotColor: dot
+    });
+
+    // Update the additional notes to include dot color information
+    const additionalNotes = formData.additional_notes || '';
+    const dotColorNote = `PING DOT COLOR: ${dot.color} (${dot.angle} - ${dot.description})`;
     
+    setFormData(prev => ({
+      ...prev,
+      additional_notes: additionalNotes ? `${dotColorNote}\n${additionalNotes}` : dotColorNote
+    }));
+
+    setShowDotColorPrompt(false);
+  }, [clubData.specs, formData.additional_notes, updateSpecs]);
+
+  // Add memo for the dot color prompt
+  const dotColorPrompt = React.useMemo(() => {
+    if (!showDotColorPrompt) return null;
+    
+    return (
+      <DotColorPrompt
+        onSelect={handleDotColorSelect}
+        onClose={() => setShowDotColorPrompt(false)}
+        selectedColor={clubData.specs?.pingDotColor}
+      />
+    );
+  }, [showDotColorPrompt, handleDotColorSelect, clubData.specs?.pingDotColor]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    submitForm();
+  };
+
+  const submitForm = () => {
     // Update the requiredFields with new values
     const updatedRequiredFields = Object.entries(clubData.requiredFields)
       .reduce((acc, [key, field]) => ({
@@ -42,45 +113,56 @@ export default function EnterSpecs() {
           ...field,
           currentValue: formData[key] || field.currentValue
         }
-      }), {})
+      }), {});
 
-    // Add location_tag and additional_notes to requiredFields if they don't exist
+    // Add location_tag to requiredFields
     if (formData.location_tag) {
       updatedRequiredFields.location_tag = {
         key: 'location_tag',
         type: 'single_line_text_field',
         namespace: 'custom',
         currentValue: formData.location_tag
-      }
+      };
     }
 
-    // Update clubData with all values
+    // Update clubData with all information
     updateClubData({
       ...clubData,
       requiredFields: updatedRequiredFields,
       preservedFields: {
         ...clubData.preservedFields,
-        additionalNotes: formData.additional_notes || '' // Store additional notes in preservedFields
+        additionalNotes: formData.additional_notes || ''
+      },
+      specs: {
+        ...clubData.specs
+        // pingDotColor is already in specs from earlier update
       }
-    })
-
-    console.log('Submitting data:', {
-      requiredFields: updatedRequiredFields,
-      preservedFields: clubData.preservedFields,
-      formData
-    })
+    });
 
     navigate('/submission-details');
-  }
+  };
 
   const renderRequiredFields = () => {
     if (!clubData?.requiredFields) return null
 
     return Object.entries(clubData.requiredFields).map(([key, field]) => {
-      // Skip if field is undefined
-      if (!field || key === 'handedness') return null
+      // Skip if field is undefined or is handedness
+      if (!field || key === 'handedness') return null;
 
-      const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase()
+      const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase();
+      
+      // Determine if this field should be a select element
+      const shouldUseSelect = (
+        key === 'club_number' || 
+        key === 'flex' || 
+        key === 'shaft_material'
+      );
+      
+      // Get the appropriate options array based on field key
+      const options = key === 'club_number' ? clubNumbers : 
+                     key === 'flex' ? flexOptions :
+                     key === 'shaft_material' ? shaftMaterials : 
+                     null;
 
       return (
         <div key={key} style={{ marginBottom: '1.5rem' }}>
@@ -94,24 +176,53 @@ export default function EnterSpecs() {
           >
             {displayLabel}:
           </label>
-          <input
-            type="text"
-            id={key}
-            name={key}
-            value={formData[key] || ''}
-            onChange={handleInputChange}
-            required
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              fontSize: '1rem'
-            }}
-          />
+          
+          {shouldUseSelect ? (
+            <select
+              id={key}
+              name={key}
+              value={formData[key] || ''}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #cbd5e0',
+                fontSize: '1rem',
+                backgroundColor: '#ffffff',
+                color: '#2d3748'
+              }}
+            >
+              <option value="">Select {displayLabel}</option>
+              {options.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              id={key}
+              name={key}
+              value={formData[key] || ''}
+              onChange={handleInputChange}
+              required
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #cbd5e0',
+                fontSize: '1rem',
+                backgroundColor: '#ffffff',
+                color: '#2d3748'
+              }}
+            />
+          )}
         </div>
       )
-    })
+    });
   }
 
   if (!clubData?.requiredFields || Object.keys(clubData.requiredFields).length === 0) {
@@ -223,6 +334,7 @@ export default function EnterSpecs() {
 
   return (
     <div style={styles.container}>
+      {dotColorPrompt}
       <h1 style={styles.header}>Enter Specifications</h1>
       
       <form onSubmit={handleSubmit}>

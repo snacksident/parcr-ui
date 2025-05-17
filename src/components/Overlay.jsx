@@ -11,8 +11,9 @@ export default function Overlay() {
   let overlayType = clubData.productType;
   if (overlayType === 'Individual Irons') {
     overlayType = 'individualIron';
+  } else if (overlayType === 'Wedges') {
+    overlayType = 'wedge'
   }
-  console.log('from overlay', clubData.currentStep)
 
   // Construct the overlay image path dynamically
   const overlaySrc = `/assets/${overlayType}/${clubData.currentStep}.jpg`;
