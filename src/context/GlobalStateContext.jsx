@@ -34,7 +34,8 @@ export function GlobalStateProvider({ children }) {
       },
       // ... other required fields
     },
-    images: []
+    images: [],
+    currentStep: 1
   });
 
   const updateClubData = (newData) => {
@@ -54,6 +55,13 @@ export function GlobalStateProvider({ children }) {
           currentValue: value
         }
       }
+    }));
+  };
+
+  const updateCurrentStep = (step) => {
+    setClubData(prev => ({
+      ...prev,
+      currentStep: step
     }));
   };
 
@@ -89,7 +97,8 @@ export function GlobalStateProvider({ children }) {
         },
         // ... other required fields
       },
-      images: []
+      images: [],
+      currentStep: 1
     })
   }
 
@@ -98,6 +107,7 @@ export function GlobalStateProvider({ children }) {
       clubData, 
       updateClubData,
       updateRequiredField,
+      updateCurrentStep,
       resetClubData 
     }}>
       {children}

@@ -10,15 +10,15 @@ import Overlay from '../components/Overlay';
  * TAKEPHOTOS WILL BE USED TO CAPTURE IMAGES OF THE CLUB, DEPENDING ON THE TYPE.
  */
 export default function TakePhotos() {
-  const { clubData, updateClubData } = useClubData();
-  const [currentStep, setCurrentStep] = useState(0); // Start at 0 for prompts
-  const [capturedImage, setCapturedImage] = useState(null);
-  const [showHandednessPrompt, setShowHandednessPrompt] = useState(true);
-  const [showPutterTypePrompt, setShowPutterTypePrompt] = useState(false);
-  const [showHeadcoverPrompt, setShowHeadcoverPrompt] = useState(false);
-  const [overlayType, setOverlayType] = useState(null);
-  const [hasHeadcover, setHasHeadcover] = useState(false);
-  const navigate = useNavigate();
+  const { clubData, updateClubData } = useClubData()
+  // Remove local currentStep state since it's now in context
+  const [capturedImage, setCapturedImage] = useState(null)
+  const [showHandednessPrompt, setShowHandednessPrompt] = useState(true)
+  const [showPutterTypePrompt, setShowPutterTypePrompt] = useState(false)
+  const [showHeadcoverPrompt, setShowHeadcoverPrompt] = useState(false)
+  const [overlayType, setOverlayType] = useState(null)
+  const [hasHeadcover, setHasHeadcover] = useState(false)
+  const navigate = useNavigate()
 
   // Helper function to check if club type needs headcover prompt
   const needsHeadcoverPrompt = (type) => {
@@ -29,15 +29,14 @@ export default function TakePhotos() {
       'iron sets',
       'putters'
     ];
-    return typesWithHeadcovers.includes(type?.toLowerCase());
-  };
+    return typesWithHeadcovers.includes(type?.toLowerCase())
+  }
 
+  // Update handlers to use context
   const handleHandednessSelect = (handedness) => {
-    console.log('Setting handedness:', handedness);
-    
-    // Update clubData with handedness - no need to uppercase since we're passing correct format
     updateClubData({
       ...clubData,
+      currentStep: 1, // Set initial step
       requiredFields: {
         ...clubData.requiredFields,
         handedness: handedness
@@ -46,22 +45,19 @@ export default function TakePhotos() {
         ...clubData.specs,
         handedness: handedness
       }
-    });
+    })
 
-    setShowHandednessPrompt(false);
+    setShowHandednessPrompt(false)
     
-    // Check if we need to show headcover prompt
     if (needsHeadcoverPrompt(clubData.productType)) {
-      setShowHeadcoverPrompt(true);
+      setShowHeadcoverPrompt(true)
     } else if (clubData.productType?.toLowerCase() === 'putters') {
-      setShowPutterTypePrompt(true);
-    } else {
-      setCurrentStep(1);
+      setShowPutterTypePrompt(true)
     }
-  };
+  }
 
   const handlePutterTypeSelect = (type) => {
-    console.log('Setting putter type:', type);
+    console.log('Setting putter type:', type)
     
     // Update clubData with putter type
     updateClubData({
@@ -70,15 +66,15 @@ export default function TakePhotos() {
         ...clubData.specs,
         putterType: type
       }
-    });
+    })
     
-    setOverlayType(type);
-    setShowPutterTypePrompt(false);
-    setCurrentStep(1);
-  };
+    setOverlayType(type)
+    setShowPutterTypePrompt(false)
+    setCurrentStep(1)
+  }
 
   const handleHeadcoverSelect = (hasHeadcover) => {
-    setHasHeadcover(hasHeadcover);
+    setHasHeadcover(hasHeadcover)
     
     // Update clubData with headcover information
     updateClubData({
@@ -92,7 +88,7 @@ export default function TakePhotos() {
           currentValue: hasHeadcover ? 'Yes' : 'No'
         }
       }
-    });
+    })
 
     setShowHeadcoverPrompt(false);
     
@@ -121,29 +117,22 @@ export default function TakePhotos() {
   };
 
   const handleAccept = () => {
-    const updatedImages = [...(clubData.images || []), capturedImage];
+    const updatedImages = [...(clubData.images || []), capturedImage]
+    const baseSteps = clubData.productType?.toLowerCase() === 'putters' ? 3 : 8
+    const maxSteps = hasHeadcover ? baseSteps + 1 : baseSteps
+    
     updateClubData({
+      ...clubData,
       images: updatedImages,
-      sku: clubData.sku,
-      productType: clubData.productType,
-      manufacturer: clubData.manufacturer,
-      requiredFields: clubData.requiredFields,
-      specs: {
-        ...clubData.specs
-      }
-    });
-    setCapturedImage(null);
+      currentStep: clubData.currentStep + 1 // Increment step in context
+    })
+    
+    setCapturedImage(null)
 
-    // Calculate max steps based on club type and headcover
-    const baseSteps = clubData.productType?.toLowerCase() === 'putters' ? 3 : 8;
-    const maxSteps = hasHeadcover ? baseSteps + 1 : baseSteps;
-
-    if (currentStep < maxSteps) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      navigate('/specs');
+    if (clubData.currentStep >= maxSteps) {
+      navigate('/specs')
     }
-  };
+  }
 
   // Render prompts or camera view
   if (showHandednessPrompt) {
@@ -281,7 +270,7 @@ export default function TakePhotos() {
     );
   }
 
-  // Update step counter display
+  // Update the render section to use context
   return (
     <div style={{ height: '100vh' }}>
       {!capturedImage ? (
@@ -290,23 +279,18 @@ export default function TakePhotos() {
             onCapture={handleCapture}
             facingMode="environment"
             clubType={clubData.productType}
-            step={currentStep}
+            step={clubData.currentStep} // Use step from context
           >
-            <Overlay
-              clubType={clubData.productType}
-              step={currentStep}
-              handedness={clubData.specs?.handedness}
-              putterType={clubData.specs?.putterType}
-            />
+            <Overlay /> {/* Overlay now gets step from context */}
           </CameraView>
           <p style={{ textAlign: 'center' }}>
-            Step {currentStep} of {
+            Step {clubData.currentStep} of {
               clubData.productType?.toLowerCase() === 'putters' 
                 ? (hasHeadcover ? '4' : '3')
                 : (hasHeadcover ? '9' : '8')
             }
-            {currentStep === (clubData.productType?.toLowerCase() === 'putters' ? 4 : 9) && hasHeadcover && 
-              ' (Headcover Photo)'}
+            {clubData.currentStep === (clubData.productType?.toLowerCase() === 'putters' ? 4 : 9) && 
+              hasHeadcover && ' (Headcover Photo)'}
           </p>
         </>
       ) : (
@@ -317,5 +301,5 @@ export default function TakePhotos() {
         />
       )}
     </div>
-  );
+  )
 }
