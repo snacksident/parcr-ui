@@ -1,49 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClubData } from '../context/GlobalStateContext';
 import { pingDotColors } from '../components/DotColorPrompt';
 import PromptModal from '../components/PromptModal';
-import '../App.css'; // Add this import
+import { 
+  clubTypeConfig, 
+  flexOptions, 
+  shaftMaterials, 
+  conditionOptions 
+} from '../config/clubTypeConfig';
+import '../App.css';
 
 export default function EnterSpecs() {
-  const navigate = useNavigate()
-  const { clubData, updateClubData, updateSpecs, userData } = useClubData()
-  const [formData, setFormData] = useState({})
-  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false)
+  const navigate = useNavigate();
+  const { clubData, updateClubData, updateSpecs, userData } = useClubData();
+  const [formData, setFormData] = useState({});
+  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false);
 
-  const clubNumbers = [
-    '1-Wood', '2-Wood', '3-Wood', '3HL-Wood', '4-Wood', '5-Wood', '5HL-Wood',
-    '6-Wood', '7-Wood', '7HL-Wood', '8-Wood', '9-Wood', '11-Wood',
-    'Fairway Wood', 'Heavenwood', 'Utility Wood',
-    '1H', '2H', '3H', '4H', '5H', '6H', '7H', '8H', '9H',
-    'Hybrid', 'Utility Iron',
-    '1-Iron', '2-Iron', '3-Iron', '4-Iron', '5-Iron', '6-Iron', '7-Iron', '8-Iron', '9-Iron', '10-Iron', '11-Iron',
-    'Iron Set',
-    'Pitching Wedge', 'Gap Wedge', 'Sand Wedge', 'Lob Wedge',
-    'Chipper', 'Putter', 'Complete Club Set',
-  ]
-  const flexOptions = [
-    'WEDGE', 'LADIES', 'SENIORS', 'REGULAR', 'STIFF', 'EXTRA STIFF',
-    'SOFT REGULAR', 'TOUR REGULAR', 'TOUR STIFF', 'TOUR EXTRA STIFF', 
-    'STIFF+', 'FIRM', 'STIFF REGULAR', 'UNIFLEX', 'REGULAR+', 'LIGHT', 'LIGHT TOUR',
-    'LITE', 'LADIES REGULAR', 'ULTRA LITE', 'JUNIOR', 'AUTOFLEX', 'COMBO FLEX',
-  ]
+  // Get filtered club numbers based on product type
+  const clubNumbers = useMemo(() => {
+    const productType = clubData.productType;
+    
+    // Find matching club type configuration
+    const matchingType = Object.entries(clubTypeConfig).find(([type]) => 
+      productType.toLowerCase().includes(type.toLowerCase())
+    );
 
-  const shaftMaterials = [
-    'Graphite', 'Steel', 'Steelfiber', 'Hickory', 'Steel and Graphite'
-  ]
+    return matchingType ? matchingType[1].numbers : [];
+  }, [clubData.productType]);
 
-  const conditionOptions = [
-    'BRAND NEW',
-    'DEMO',
-    'COMING SOON',
-    'VERY GOOD',
-    'GOOD',
-    'FAIR',
-    'POOR'
-  ];
-
-  // Add this constant at the top of your component with the other constants
   const fieldOrder = [
     'club_number',
     'flex',
@@ -232,9 +217,8 @@ export default function EnterSpecs() {
 
     return fieldOrder
       .filter(key => {
-        // Skip fields we don't want to show
         if (key === 'handedness' || key === 'initials') return false;
-        // Only include fields that exist in requiredFields
+        if (key === 'club_number' && clubNumbers.length === 0) return false;
         return clubData.requiredFields[key];
       })
       .map(key => {

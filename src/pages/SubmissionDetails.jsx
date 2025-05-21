@@ -57,6 +57,7 @@ export default function SubmissionDetails() {
     // Add core product info
     if (clubData.model) titleComponents.push(clubData.model)
     if (clubData.manufacturer) titleComponents.push(clubData.manufacturer)
+    //STRIP DOWN CLUB NUMBER (REMOVE HYPHEN AS NECESSARY - ONLY FOR TITLE)
 
     // Add specs in order
     const specsToAdd = [
@@ -74,7 +75,7 @@ export default function SubmissionDetails() {
       clubData.sku,
       clubData.requiredFields.custom_label?.currentValue,
       clubData.requiredFields.location_tag?.currentValue
-    ].filter(Boolean).join(' - ')
+    ].filter(Boolean).join(' ')
 
     // Format metafields for Shopify - ensure all fields are included
     const metafields = []
@@ -179,7 +180,7 @@ export default function SubmissionDetails() {
       status: 'DRAFT',
       options: [{
         name: 'Condition',
-        values: [clubData.requiredFields.condition?.currentValue || 'New']
+        values: [clubData.requiredFields.condition?.currentValue]
       }]
     }
   }
@@ -312,7 +313,7 @@ export default function SubmissionDetails() {
       </section>
 
       {/* Preserved Fields Section */}
-      <section className="section">
+      {/* <section className="section">
         <div className="sectionHeader">
           <h2 className="sectionTitle">Template Information</h2>
         </div>
@@ -327,7 +328,7 @@ export default function SubmissionDetails() {
             ))
           }
         </div>
-      </section>
+      </section> */}
 
       {/* Required Fields Section */}
       <section className="section">
