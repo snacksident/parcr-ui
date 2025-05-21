@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useClubData } from '../context/GlobalStateContext'
-import axios from 'axios'
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useClubData } from '../context/GlobalStateContext';
+import axios from 'axios';
+import '../App.css'; // Add this import
 
 const baseUrl = 'https://parcr-backend.onrender.com/api'
 
@@ -81,7 +82,7 @@ export default function SubmissionDetails() {
     // Add preserved fields as metafields
     if (clubData.preservedFields) {
       const preservedFieldMappings = {
-        manufacturer: 'manufacturer',
+        manufacturer: 'club_manufacturer',
         golfClubType: 'golf_club_type',
         model: 'model'
       }
@@ -275,40 +276,53 @@ export default function SubmissionDetails() {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Review Submission</h1>
+    <div className="container">
+      <h1 className="pageTitle">Review Submission</h1>
       
-      {/* Basic Info */}
-      <section style={{ marginBottom: '2rem' }}>
-        <h2>Product Information</h2>
-        <div style={{ 
-          backgroundColor: '#f8f9fa',
-          padding: '1rem',
-          borderRadius: '8px',
-          marginBottom: '1rem'
-        }}>
-          <strong>Generated Title:</strong> {generateTitle()}<br />
-          <strong>SKU:</strong> {clubData.sku}<br />
-          <strong>Type:</strong> {clubData.productType}<br />
-          <strong>Manufacturer:</strong> {clubData.manufacturer}<br />
-          <strong>Model:</strong> {clubData.model}<br />
-          <strong>Handedness:</strong> {clubData.specs?.handedness}
+      <section className="section">
+        <div className="sectionHeader">
+          <h2 className="sectionTitle">Product Information</h2>
+        </div>
+        <div className="sectionContent">
+          <div className="infoRow">
+            <span className="label">Generated Title:</span>
+            <span className="value">{generateTitle()}</span>
+          </div>
+          <div className="infoRow">
+            <span className="label">SKU:</span>
+            <span className="value">{clubData.sku}</span>
+          </div>
+          <div className="infoRow">
+            <span className="label">Type:</span>
+            <span className="value">{clubData.productType}</span>
+          </div>
+          <div className="infoRow">
+            <span className="label">Manufacturer:</span>
+            <span className="value">{clubData.manufacturer}</span>
+          </div>
+          <div className="infoRow">
+            <span className="label">Model:</span>
+            <span className="value">{clubData.model}</span>
+          </div>
+          <div className="infoRow">
+            <span className="label">Handedness:</span>
+            <span className="value">{clubData.specs?.handedness}</span>
+          </div>
         </div>
       </section>
 
       {/* Preserved Fields Section */}
-      <section style={{ marginBottom: '2rem' }}>
-        <h2>Template Information</h2>
-        <div style={{ 
-          backgroundColor: '#f8f9fa',
-          padding: '1rem',
-          borderRadius: '8px'
-        }}>
+      <section className="section">
+        <div className="sectionHeader">
+          <h2 className="sectionTitle">Template Information</h2>
+        </div>
+        <div className="sectionContent">
           {Object.entries(clubData.preservedFields)
             .filter(([key, value]) => value && key !== 'additionalNotes')
             .map(([key, value]) => (
-              <div key={key}>
-                <strong>{key.replace(/([A-Z])/g, ' $1').toUpperCase()}:</strong> {value}
+              <div key={key} className="infoRow">
+                <span className="label">{key.replace(/([A-Z])/g, ' $1').toUpperCase()}</span>
+                <span className="value">{value}</span>
               </div>
             ))
           }
@@ -316,18 +330,17 @@ export default function SubmissionDetails() {
       </section>
 
       {/* Required Fields Section */}
-      <section style={{ marginBottom: '2rem' }}>
-        <h2>Specifications</h2>
-        <div style={{ 
-          backgroundColor: '#f8f9fa',
-          padding: '1rem',
-          borderRadius: '8px'
-        }}>
+      <section className="section">
+        <div className="sectionHeader">
+          <h2 className="sectionTitle">Specifications</h2>
+        </div>
+        <div className="sectionContent">
           {Object.entries(clubData.requiredFields)
             .filter(([_, field]) => field.currentValue && typeof field.currentValue === 'string')
             .map(([key, field]) => (
-              <div key={key}>
-                <strong>{key.replace(/_/g, ' ').toUpperCase()}:</strong> {field.currentValue}
+              <div key={key} className="infoRow">
+                <span className="label">{key.replace(/_/g, ' ').toUpperCase()}</span>
+                <span className="value">{field.currentValue}</span>
               </div>
             ))
           }
@@ -336,27 +349,29 @@ export default function SubmissionDetails() {
 
       {/* Additional Notes */}
       {clubData.preservedFields.additionalNotes && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2>Additional Notes</h2>
-          <p>{clubData.preservedFields.additionalNotes}</p>
+        <section className="section">
+          <div className="sectionHeader">
+            <h2 className="sectionTitle">Additional Notes</h2>
+          </div>
+          <div className="sectionContent">
+            <p style={{ margin: 0, lineHeight: '1.6' }}>{clubData.preservedFields.additionalNotes}</p>
+          </div>
         </section>
       )}
 
       {/* Images */}
       {clubData.images?.length > 0 && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2>Images ({clubData.images.length})</h2>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
-            gap: '1rem' 
-          }}>
+        <section className="section">
+          <div className="sectionHeader">
+            <h2 className="sectionTitle">Images ({clubData.images.length})</h2>
+          </div>
+          <div className="imageGrid">
             {clubData.images.map((img, idx) => (
               <img
                 key={idx}
                 src={img}
                 alt={`Product ${idx + 1}`}
-                style={{ width: '100%', height: '150px', objectFit: 'cover' }}
+                className="image"
               />
             ))}
           </div>
@@ -364,25 +379,16 @@ export default function SubmissionDetails() {
       )}
 
       {/* Status Messages */}
-      {error && <div style={{ color: 'red', marginBottom: '1rem' }}>{error}</div>}
-      {uploadStatus && <div style={{ marginBottom: '1rem' }}>{uploadStatus}</div>}
+      {error && <div className="error">{error}</div>}
+      {uploadStatus && <div className="status">{uploadStatus}</div>}
 
-      {/* Submit Button */}
       <button
         onClick={handleCreateListing}
         disabled={isCreating}
-        style={{
-          width: '100%',
-          padding: '1rem',
-          background: isCreating ? '#ccc' : '#007AFF',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: isCreating ? 'not-allowed' : 'pointer'
-        }}
+        className="submitButton"
       >
         {isCreating ? uploadStatus || 'Creating Listing...' : 'Create Shopify Listing'}
       </button>
     </div>
-  )
+  );
 }

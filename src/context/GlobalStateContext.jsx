@@ -3,6 +3,12 @@ import React, { createContext, useContext, useState } from 'react'
 const GlobalStateContext = createContext()
 
 export function GlobalStateProvider({ children }) {
+  // Add separate state for user data
+  const [userData, setUserData] = useState({
+    initials: '',
+    isLoggedIn: false
+  });
+
   const [clubData, setClubData] = useState({
     templateId: '',
     manufacturer: '',
@@ -32,6 +38,12 @@ export function GlobalStateProvider({ children }) {
         namespace: 'custom',
         currentValue: 'COMING SOON'
       },
+      initials: {
+        key: 'initials',
+        type: 'single_line_text_field',
+        namespace: 'custom',
+        currentValue: userData.initials // Auto-populate from user data
+      }
       // ... other required fields
     },
     images: [],
@@ -43,10 +55,36 @@ export function GlobalStateProvider({ children }) {
     }
   });
 
+  // Add function to update user data
+  const updateUserData = (data) => {
+    setUserData(prev => ({
+      ...prev,
+      ...data
+    }));
+  };
+
+  // Add function to log out user
+  const logoutUser = () => {
+    setUserData({
+      initials: '',
+      isLoggedIn: false
+    });
+  };
+
   const updateClubData = (newData) => {
     setClubData(prev => ({
       ...prev,
-      ...newData
+      ...newData,
+      requiredFields: {
+        ...prev.requiredFields,
+        ...newData.requiredFields,
+        initials: {
+          key: 'initials',
+          type: 'single_line_text_field',
+          namespace: 'custom',
+          currentValue: userData.initials // Auto-populate from user data
+        }
+      }
     }));
   };
 
@@ -100,6 +138,12 @@ export function GlobalStateProvider({ children }) {
           namespace: 'custom',
           currentValue: 'COMING SOON'
         },
+        initials: {
+          key: 'initials',
+          type: 'single_line_text_field',
+          namespace: 'custom',
+          currentValue: userData.initials // Auto-populate from user data
+        }
         // ... other required fields
       },
       images: [],
@@ -130,7 +174,10 @@ export function GlobalStateProvider({ children }) {
       updateRequiredField,
       updateCurrentStep,
       resetClubData,
-      updateSpecs // Add this to the context
+      updateSpecs,
+      userData,         // Add user data to context
+      updateUserData,   // Add update function
+      logoutUser       // Add logout function
     }}>
       {children}
     </GlobalStateContext.Provider>

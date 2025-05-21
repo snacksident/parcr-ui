@@ -1,10 +1,10 @@
 // src/pages/TakePhotos.jsx
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useClubData } from '../context/GlobalStateContext';
-import CameraView from '../components/CameraView';
-import PreviewImage from '../components/PreviewImage';
-import Overlay from '../components/Overlay';
+import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useClubData } from '../context/GlobalStateContext'
+import CameraView from '../components/CameraView'
+import PreviewImage from '../components/PreviewImage'
+import Overlay from '../components/Overlay'
 
 /**
  * TAKEPHOTOS WILL BE USED TO CAPTURE IMAGES OF THE CLUB, DEPENDING ON THE TYPE.
@@ -109,11 +109,11 @@ export default function TakePhotos() {
   }, [clubData.specs])
 
   const handleCapture = (img) => {
-    setCapturedImage(img);
+    setCapturedImage(img)
   }
 
   const handleRetake = () => {
-    setCapturedImage(null);
+    setCapturedImage(null)
   }
 
   const handleAccept = () => {
@@ -177,7 +177,7 @@ export default function TakePhotos() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   if (showPutterTypePrompt) {
@@ -267,7 +267,7 @@ export default function TakePhotos() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
   // Update the render section to use context

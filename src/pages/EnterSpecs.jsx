@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useClubData } from '../context/GlobalStateContext';
-import DotColorPrompt, { pingDotColors } from '../components/DotColorPrompt';
+import { pingDotColors } from '../components/DotColorPrompt';
+import PromptModal from '../components/PromptModal';
+import '../App.css'; // Add this import
 
 export default function EnterSpecs() {
-  const navigate = useNavigate();
-  const { clubData, updateClubData, updateSpecs } = useClubData();
-  const [formData, setFormData] = useState({});
-  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false);
+  const navigate = useNavigate()
+  const { clubData, updateClubData, updateSpecs, userData } = useClubData()
+  const [formData, setFormData] = useState({})
+  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false)
 
   const clubNumbers = [
     '1-Wood', '2-Wood', '3-Wood', '3HL-Wood', '4-Wood', '5-Wood', '5HL-Wood',
@@ -21,7 +23,7 @@ export default function EnterSpecs() {
     'Chipper', 'Putter', 'Complete Club Set',
   ]
   const flexOptions = [
-    'WEDGE', 'LADIES', 'SENIOR', 'REGULAR', 'STIFF', 'EXTRA STIFF',
+    'WEDGE', 'LADIES', 'SENIORS', 'REGULAR', 'STIFF', 'EXTRA STIFF',
     'SOFT REGULAR', 'TOUR REGULAR', 'TOUR STIFF', 'TOUR EXTRA STIFF', 
     'STIFF+', 'FIRM', 'STIFF REGULAR', 'UNIFLEX', 'REGULAR+', 'LIGHT', 'LIGHT TOUR',
     'LITE', 'LADIES REGULAR', 'ULTRA LITE', 'JUNIOR', 'AUTOFLEX', 'COMBO FLEX',
@@ -31,19 +33,47 @@ export default function EnterSpecs() {
     'Graphite', 'Steel', 'Steelfiber', 'Hickory', 'Steel and Graphite'
   ]
 
+  const conditionOptions = [
+    'BRAND NEW',
+    'DEMO',
+    'COMING SOON',
+    'VERY GOOD',
+    'GOOD',
+    'FAIR',
+    'POOR'
+  ];
+
+  // Add this constant at the top of your component with the other constants
+  const fieldOrder = [
+    'club_number',
+    'flex',
+    'shaft_material',
+    'shaft_make_model',
+    'grip_make_model_size',
+    'item_length',
+    'custom_label',
+    'initials_staff_use_only_'
+  ];
+
   useEffect(() => {
-    console.log('Current clubData:', clubData);
     if (clubData?.requiredFields) {
-      console.log('Required Fields:', clubData.requiredFields);
       // Initialize form with current values from requiredFields
       const initialFormData = Object.entries(clubData.requiredFields)
-        .reduce((acc, [key, field]) => ({
-          ...acc,
-          [key]: field?.currentValue === 'COMING SOON' ? '' : field?.currentValue || ''
-        }), {});
+        .reduce((acc, [key, field]) => {
+          // Skip the regular 'initials' field
+          if (key === 'initials') return acc;
+          
+          return {
+            ...acc,
+            [key]: field?.currentValue === 'COMING SOON' ? '' : field?.currentValue || ''
+          };
+        }, {});
 
-      console.log('Initial Form Data:', initialFormData);
-      setFormData(initialFormData);
+      // Set the staff initials field with userData.initials
+      initialFormData.initials_staff_use_only_ = userData.initials;
+      
+      console.log('Initial Form Data:', initialFormData)
+      setFormData(initialFormData)
 
       // Only show the dot color prompt if we haven't selected a color yet
       if (
@@ -56,7 +86,7 @@ export default function EnterSpecs() {
         setShowDotColorPrompt(true);
       }
     }
-  }, [clubData.requiredFields]); // Change dependency to only requiredFields
+  }, [clubData.requiredFields, userData.initials]); // Change dependency to only requiredFields
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -72,29 +102,63 @@ export default function EnterSpecs() {
     updateSpecs({
       ...clubData.specs,
       pingDotColor: dot
-    });
+    })
 
     // Update the additional notes to include dot color information
     const additionalNotes = formData.additional_notes || '';
-    const dotColorNote = `PING DOT COLOR: ${dot.color} (${dot.angle} - ${dot.description})`;
+    const dotColorNote = `PING DOT COLOR: ${dot.color} (${dot.angle} - ${dot.description})`
     
     setFormData(prev => ({
       ...prev,
       additional_notes: additionalNotes ? `${dotColorNote}\n${additionalNotes}` : dotColorNote
-    }));
+    }))
 
-    setShowDotColorPrompt(false);
-  }, [clubData.specs, formData.additional_notes, updateSpecs]);
+    setShowDotColorPrompt(false)
+  }, [clubData.specs, formData.additional_notes, updateSpecs])
 
   // Add memo for the dot color prompt
-  const dotColorPrompt = React.useMemo(() => {
+  const renderDotColorPrompt = React.useMemo(() => {
     if (!showDotColorPrompt) return null;
     
     return (
-      <DotColorPrompt
-        onSelect={handleDotColorSelect}
+      <PromptModal
+        title="Select PING Dot Color"
+        description="Choose the dot color that matches your club's color code"
+        options={pingDotColors.map(dot => ({
+          value: dot,
+          content: (
+            <>
+              <span style={{
+                color: dot.textColor,
+                fontWeight: 'bold',
+                marginBottom: '0.25rem',
+                textShadow: dot.color === 'White' ? '0 0 1px #000' : 'none'
+              }}>
+                {dot.color}
+              </span>
+              <span style={{
+                fontSize: '0.9rem',
+                color: '#4a5568'
+              }}>
+                {dot.angle}
+              </span>
+              <span style={{
+                fontSize: '0.8rem',
+                color: '#718096',
+                textAlign: 'center'
+              }}>
+                {dot.description}
+              </span>
+            </>
+          ),
+          style: {
+            backgroundColor: clubData.specs?.pingDotColor?.color === dot.color ? '#f0f9ff' : '#ffffff',
+            borderColor: clubData.specs?.pingDotColor?.color === dot.color ? '#3182ce' : '#cbd5e0'
+          }
+        }))}
+        onSelect={(option) => handleDotColorSelect(option.value)}
         onClose={() => setShowDotColorPrompt(false)}
-        selectedColor={clubData.specs?.pingDotColor}
+        selectedValue={clubData.specs?.pingDotColor}
       />
     );
   }, [showDotColorPrompt, handleDotColorSelect, clubData.specs?.pingDotColor]);
@@ -105,15 +169,21 @@ export default function EnterSpecs() {
   };
 
   const submitForm = () => {
-    // Update the requiredFields with new values
     const updatedRequiredFields = Object.entries(clubData.requiredFields)
-      .reduce((acc, [key, field]) => ({
-        ...acc,
-        [key]: {
-          ...field,
-          currentValue: formData[key] || field.currentValue
-        }
-      }), {});
+      .reduce((acc, [key, field]) => {
+        // Skip the regular 'initials' field
+        if (key === 'initials') return acc;
+
+        return {
+          ...acc,
+          [key]: {
+            ...field,
+            currentValue: key === 'initials_staff_use_only_' ? 
+              userData.initials : // Always use userData.initials for staff field
+              formData[key] || field.currentValue
+          }
+        };
+      }, {});
 
     // Add location_tag to requiredFields
     if (formData.location_tag) {
@@ -125,10 +195,24 @@ export default function EnterSpecs() {
       };
     }
 
-    // Update clubData with all information
+    // Update the condition metafield in the submitForm function
+    updatedRequiredFields.condition = {
+      key: 'condition',
+      type: 'list.single_line_text_field', // Change the type here
+      namespace: 'custom',
+      currentValue: formData.condition || 'BRAND NEW' // This value will be wrapped in an array
+    };
+
+    // When updating clubData, we need to ensure the condition is in array format
     updateClubData({
       ...clubData,
-      requiredFields: updatedRequiredFields,
+      requiredFields: {
+        ...updatedRequiredFields,
+        condition: {
+          ...updatedRequiredFields.condition,
+          currentValue: [updatedRequiredFields.condition.currentValue] // Wrap in array
+        }
+      },
       preservedFields: {
         ...clubData.preservedFields,
         additionalNotes: formData.additional_notes || ''
@@ -142,87 +226,69 @@ export default function EnterSpecs() {
     navigate('/submission-details');
   };
 
+  // Update the renderRequiredFields function
   const renderRequiredFields = () => {
-    if (!clubData?.requiredFields) return null
+    if (!clubData?.requiredFields) return null;
 
-    return Object.entries(clubData.requiredFields).map(([key, field]) => {
-      // Skip if field is undefined or is handedness
-      if (!field || key === 'handedness') return null;
+    return fieldOrder
+      .filter(key => {
+        // Skip fields we don't want to show
+        if (key === 'handedness' || key === 'initials') return false;
+        // Only include fields that exist in requiredFields
+        return clubData.requiredFields[key];
+      })
+      .map(key => {
+        const field = clubData.requiredFields[key];
+        if (!field) return null;
 
-      const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase();
-      
-      // Determine if this field should be a select element
-      const shouldUseSelect = (
-        key === 'club_number' || 
-        key === 'flex' || 
-        key === 'shaft_material'
-      );
-      
-      // Get the appropriate options array based on field key
-      const options = key === 'club_number' ? clubNumbers : 
-                     key === 'flex' ? flexOptions :
-                     key === 'shaft_material' ? shaftMaterials : 
-                     null;
+        const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase();
+        const shouldUseSelect = (
+          key === 'club_number' || 
+          key === 'flex' || 
+          key === 'shaft_material'
+        );
+        
+        const options = key === 'club_number' ? clubNumbers : 
+                       key === 'flex' ? flexOptions :
+                       key === 'shaft_material' ? shaftMaterials : 
+                       null;
 
-      return (
-        <div key={key} style={{ marginBottom: '1.5rem' }}>
-          <label
-            htmlFor={key}
-            style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 'bold'
-            }}
-          >
-            {displayLabel}:
-          </label>
-          
-          {shouldUseSelect ? (
-            <select
-              id={key}
-              name={key}
-              value={formData[key] || ''}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                border: '1px solid #cbd5e0',
-                fontSize: '1rem',
-                backgroundColor: '#ffffff',
-                color: '#2d3748'
-              }}
-            >
-              <option value="">Select {displayLabel}</option>
-              {options.map(option => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              id={key}
-              name={key}
-              value={formData[key] || ''}
-              onChange={handleInputChange}
-              required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                borderRadius: '4px',
-                border: '1px solid #cbd5e0',
-                fontSize: '1rem',
-                backgroundColor: '#ffffff',
-                color: '#2d3748'
-              }}
-            />
-          )}
-        </div>
-      )
-    });
+        return (
+          <div key={key} className="formField">
+            <label htmlFor={key} className="formLabel">
+              {displayLabel}:
+            </label>
+            
+            {shouldUseSelect ? (
+              <select
+                id={key}
+                name={key}
+                value={formData[key] || ''}
+                onChange={handleInputChange}
+                required
+                className="formSelect"
+              >
+                <option value="">Select {displayLabel}</option>
+                {options.map(option => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                id={key}
+                name={key}
+                value={formData[key] || ''}
+                onChange={handleInputChange}
+                required
+                className="formInput"
+              />
+            )}
+          </div>
+        );
+      });
   }
 
   if (!clubData?.requiredFields || Object.keys(clubData.requiredFields).length === 0) {
@@ -234,146 +300,67 @@ export default function EnterSpecs() {
     );
   }
 
-  const styles = {
-    container: {
-      padding: '1rem',
-      maxWidth: '600px',
-      margin: '0 auto',
-      backgroundColor: '#ffffff',
-      color: '#333333',
-      minHeight: '100vh'
-    },
-    header: {
-      fontSize: '1.75rem',
-      fontWeight: '600',
-      marginBottom: '1.5rem',
-      color: '#1a1a1a',
-      textAlign: 'center'
-    },
-    section: {
-      marginBottom: '2rem',
-      backgroundColor: '#f8f9fa',
-      padding: '1.25rem',
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-    },
-    sectionHeader: {
-      fontSize: '1.25rem',
-      fontWeight: '600',
-      marginBottom: '1rem',
-      color: '#2c3e50',
-      textAlign: 'left'
-    },
-    infoRow: {
-      marginBottom: '0.75rem',
-      fontSize: '1rem',
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center'
-    },
-    label: {
-      fontWeight: '600',
-      marginRight: '0.5rem',
-      color: '#2c3e50',
-      minWidth: '120px'
-    },
-    value: {
-      color: '#4a5568'
-    },
-    formField: {
-      marginBottom: '1.25rem'
-    },
-    inputLabel: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      fontWeight: '600',
-      color: '#2c3e50',
-      fontSize: '0.95rem'
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e0',
-      fontSize: '1rem',
-      backgroundColor: '#ffffff',
-      color: '#2d3748',
-      transition: 'border-color 0.2s ease',
-      '&:focus': {
-        borderColor: '#4299e1',
-        outline: 'none'
-      }
-    },
-    textarea: {
-      width: '100%',
-      padding: '0.75rem',
-      borderRadius: '6px',
-      border: '1px solid #cbd5e0',
-      fontSize: '1rem',
-      backgroundColor: '#ffffff',
-      color: '#2d3748',
-      minHeight: '100px',
-      resize: 'vertical'
-    },
-    submitButton: {
-      width: '100%',
-      padding: '1rem',
-      backgroundColor: '#3182ce',
-      color: '#ffffff',
-      border: 'none',
-      borderRadius: '6px',
-      fontSize: '1.1rem',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s ease',
-      '&:hover': {
-        backgroundColor: '#2c5282'
-      }
-    }
-  };
-
   return (
-    <div style={styles.container}>
-      {dotColorPrompt}
-      <h1 style={styles.header}>Enter Specifications</h1>
+    <div className="container">
+      {renderDotColorPrompt}
+      <h1 className="pageTitle">Enter Specifications</h1>
       
       <form onSubmit={handleSubmit}>
-        {/* Club Info Section */}
-        <div style={styles.section}>
-          <h3 style={styles.sectionHeader}>Club Information</h3>
-          <div style={styles.infoRow}>
-            <span style={styles.label}>SKU:</span>
-            <span style={styles.value}>{clubData.sku}</span>
+        <section className="section">
+          <div className="sectionHeader">
+            <h2 className="sectionTitle">Club Information</h2>
           </div>
-          <div style={styles.infoRow}>
-            <span style={styles.label}>Type:</span>
-            <span style={styles.value}>{clubData.productType}</span>
+          <div className="sectionContent">
+            <div className="infoRow">
+              <span className="label">SKU:</span>
+              <span className="value">{clubData.sku}</span>
+            </div>
+            <div className="infoRow">
+              <span className="label">Type:</span>
+              <span className="value">{clubData.productType}</span>
+            </div>
+            <div className="infoRow">
+              <span className="label">Manufacturer:</span>
+              <span className="value">{clubData.manufacturer}</span>
+            </div>
+            <div className="infoRow">
+              <span className="label">Model:</span>
+              <span className="value">{clubData.model}</span>
+            </div>
+            <div className="infoRow">
+              <span className="label">Handedness:</span>
+              <span className="value">{clubData.requiredFields?.handedness || 'N/A'}</span>
+            </div>
+          
           </div>
-          <div style={styles.infoRow}>
-            <span style={styles.label}>Manufacturer:</span>
-            <span style={styles.value}>{clubData.manufacturer}</span>
-          </div>
-          <div style={styles.infoRow}>
-            <span style={styles.label}>Model:</span>
-            <span style={styles.value}>{clubData.model}</span>
-          </div>
-          <div style={styles.infoRow}>
-            <span style={styles.label}>Handedness:</span>
-            <span style={styles.value}>{clubData.requiredFields?.handedness || 'N/A'}</span>
-          </div>
-        </div>
+        </section>
 
-        {/* Required Fields Section */}
-        <div style={styles.section}>
-          <h3 style={styles.sectionHeader}>Required Specifications</h3>
+        <section className="formSection">
+          <h3 className="sectionTitle">Required Specifications</h3>
           {renderRequiredFields()}
-        </div>
-
-        {/* Additional Information Section */}
-        <div style={styles.section}>
-          <h3 style={styles.sectionHeader}>Additional Information</h3>
-          <div style={styles.formField}>
-            <label htmlFor="location_tag" style={styles.inputLabel}>
+          <div className="formField">
+            <label htmlFor="condition" className="formLabel">
+              CONDITION:
+            </label>
+            <select
+              id="condition"
+              name="condition"
+              value={formData.condition || ''}
+              onChange={handleInputChange}
+              required
+              className="formSelect"
+            >
+              <option value="">Select Condition</option>
+              {conditionOptions.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="formField">
+            <label htmlFor="location_tag" className="formLabel">
               LOCATION TAG:
             </label>
             <input
@@ -383,16 +370,15 @@ export default function EnterSpecs() {
               value={formData.location_tag || ''}
               onChange={handleInputChange}
               required
-              style={styles.input}
+              className="formInput"
             />
           </div>
-        </div>
+        </section>
 
-        {/* Additional Notes Section */}
-        <div style={styles.section}>
-          <h3 style={styles.sectionHeader}>Additional Notes</h3>
-          <div style={styles.formField}>
-            <label htmlFor="additional_notes" style={styles.inputLabel}>
+        <section className="formSection">
+          <h3 className="sectionTitle">Additional Notes</h3>
+          <div className="formField">
+            <label htmlFor="additional_notes" className="formLabel">
               ADDITIONAL NOTES:
             </label>
             <textarea
@@ -400,13 +386,13 @@ export default function EnterSpecs() {
               name="additional_notes"
               value={formData.additional_notes || ''}
               onChange={handleInputChange}
-              style={styles.textarea}
+              className="formTextarea"
               placeholder="Enter any additional notes about this club..."
             />
           </div>
-        </div>
+        </section>
 
-        <button type="submit" style={styles.submitButton}>
+        <button type="submit" className="submitButton">
           Review And Upload
         </button>
       </form>
