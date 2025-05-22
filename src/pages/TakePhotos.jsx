@@ -24,10 +24,10 @@ export default function TakePhotos() {
   const needsHeadcoverPrompt = (type) => {
     const typesWithHeadcovers = [
       'drivers',
-      'woods',
+      'fairway woods',
       'hybrids',
       'iron sets',
-      'putters'
+      'putters',
     ]
     return typesWithHeadcovers.includes(type?.toLowerCase())
   }

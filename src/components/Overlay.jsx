@@ -13,6 +13,14 @@ export default function Overlay() {
     overlayType = 'individualIron';
   } else if (overlayType === 'Wedges') {
     overlayType = 'wedge'
+  } else if (overlayType === 'Putters') {
+    overlayType = clubData.specs?.putterType === 'Blade' ? 'putter' : 'putterMallet'
+  } else if (overlayType === 'Hybrids') {
+    overlayType = 'Hybrids'
+  } else if (overlayType === 'Drivers') {
+    overlayType = 'driver'
+  } else if (overlayType === 'Fairway Woods') {
+    overlayType = 'fairway'
   }
 
   // Construct the overlay image path dynamically
