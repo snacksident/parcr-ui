@@ -161,3 +161,49 @@
   min-height: 100px;
   resize: vertical;
 }
+
+/* Suggested Styles */
+.suggestionsWrapper {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.suggestionBtn {
+  padding: 0.5rem 1rem;
+  margin: 0.25rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.suggestionBtn:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+}
+
+.suggestionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.modelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.premiumOption {
+  font-size: 0.8rem;
+  color: #4a5568;
+  margin-left: 0.5rem;
+}
+
+.sizeBtn {
+  background: #f7fafc;
+}

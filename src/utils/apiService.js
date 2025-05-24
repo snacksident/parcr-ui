@@ -19,3 +19,13 @@ export const uploadImages = async (productId, images) => {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export const getRecommendedPrice = async (sku, condition) => {
+  try {
+    const response = await apiClient.get(`/recommended-price/${sku}/${condition}`)
+    return response.data.data
+  } catch (error) {
+    console.error('Error fetching recommended price:', error)
+    throw error
+  }
+}

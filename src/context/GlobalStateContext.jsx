@@ -3,57 +3,38 @@ import React, { createContext, useContext, useState } from 'react'
 const GlobalStateContext = createContext()
 
 export function GlobalStateProvider({ children }) {
-  // Add separate state for user data
-  const [userData, setUserData] = useState({
-    initials: '',
-    isLoggedIn: false
-  });
-
-  const [clubData, setClubData] = useState({
+  const getDefaultState = () => ({
     templateId: '',
     manufacturer: '',
     productType: '',
     sku: '',
+    model: '',
     preservedFields: {
       manufacturer: '',
       golfClubType: '',
-      model: ''
+      model: '',
+      additionalNotes: ''
     },
-    requiredFields: {
-      club_number: {
-        key: 'club_number',
-        type: 'single_line_text_field',
-        namespace: 'custom',
-        currentValue: 'COMING SOON'
-      },
-      custom_label: {
-        key: 'custom_label',
-        type: 'single_line_text_field',
-        namespace: 'custom',
-        currentValue: 'COMING SOON'
-      },
-      flex: {
-        key: 'flex',
-        type: 'single_line_text_field',
-        namespace: 'custom',
-        currentValue: 'COMING SOON'
-      },
-      initials: {
-        key: 'initials',
-        type: 'single_line_text_field',
-        namespace: 'custom',
-        currentValue: userData.initials // Auto-populate from user data
-      }
-      // ... other required fields
-    },
+    requiredFields: {},
     images: [],
     currentStep: 1,
     specs: {
       handedness: null,
       putterType: null,
-      pingDotColor: null // Add this new field
+      pingDotColor: null
+    },
+    recommendedPrice: null,
+    inventory: {
+      quantity: 1
     }
+  })
+
+  const [userData, setUserData] = useState({
+    initials: '',
+    isLoggedIn: false
   });
+
+  const [clubData, setClubData] = useState(getDefaultState())
 
   // Add function to update user data
   const updateUserData = (data) => {
@@ -109,51 +90,7 @@ export function GlobalStateProvider({ children }) {
   };
 
   const resetClubData = () => {
-    setClubData({
-      templateId: '',
-      manufacturer: '',
-      productType: '',
-      sku: '',
-      preservedFields: {
-        manufacturer: '',
-        golfClubType: '',
-        model: ''
-      },
-      requiredFields: {
-        club_number: {
-          key: 'club_number',
-          type: 'single_line_text_field',
-          namespace: 'custom',
-          currentValue: 'COMING SOON'
-        },
-        custom_label: {
-          key: 'custom_label',
-          type: 'single_line_text_field',
-          namespace: 'custom',
-          currentValue: 'COMING SOON'
-        },
-        flex: {
-          key: 'flex',
-          type: 'single_line_text_field',
-          namespace: 'custom',
-          currentValue: 'COMING SOON'
-        },
-        initials: {
-          key: 'initials',
-          type: 'single_line_text_field',
-          namespace: 'custom',
-          currentValue: userData.initials // Auto-populate from user data
-        }
-        // ... other required fields
-      },
-      images: [],
-      currentStep: 1,
-      specs: {
-        handedness: null,
-        putterType: null,
-        pingDotColor: null // Add this new field
-      }
-    })
+    setClubData(getDefaultState())
   }
 
   // Add a helper function to update specs

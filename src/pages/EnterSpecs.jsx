@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useClubData } from '../context/GlobalStateContext'
 import { pingDotColors } from '../components/DotColorPrompt'
 import PromptModal from '../components/PromptModal'
+import SpecSuggestions from '../components/SpecSuggestions'
 import { 
   clubTypeConfig, 
   flexOptions, 
@@ -19,6 +20,8 @@ export default function EnterSpecs() {
   const [inventoryData, setInventoryData] = useState({
     quantity: 1
   })
+  const [activeSuggestion, setActiveSuggestion] = useState(null)
+  const [selectedMaker, setSelectedMaker] = useState(null)
 
   // Get filtered club numbers based on product type
   const clubNumbers = useMemo(() => {
@@ -169,11 +172,19 @@ export default function EnterSpecs() {
           [key]: {
             ...field,
             currentValue: key === 'initials_staff_use_only_' ? 
-              userData.initials : // Always use userData.initials for staff field
+              userData.initials : 
               formData[key] || field.currentValue
           }
         };
       }, {});
+
+    // Add trade_in_condition to requiredFields
+    updatedRequiredFields.trade_in_condition = {
+      key: 'trade_in_condition',
+      type: 'single_line_text_field',
+      namespace: 'custom',
+      currentValue: formData.trade_in_condition
+    }
 
     // Add location_tag to requiredFields
     if (formData.location_tag) {
@@ -185,12 +196,12 @@ export default function EnterSpecs() {
       }
     }
 
-    // Update the condition metafield in the submitForm function
+    // Update the condition metafield
     updatedRequiredFields.condition = {
       key: 'condition',
-      type: 'list.single_line_text_field', // Change the type here
+      type: 'list.single_line_text_field',
       namespace: 'custom',
-      currentValue: formData.condition || 'BRAND NEW' // This value will be wrapped in an array
+      currentValue: formData.condition || 'BRAND NEW'
     }
 
     // Create inventory update data
@@ -201,14 +212,14 @@ export default function EnterSpecs() {
       quantity: inventoryData.quantity
     }
 
-    // When updating clubData, include inventory data
+    // When updating clubData, include all the fields
     updateClubData({
       ...clubData,
       requiredFields: {
         ...updatedRequiredFields,
         condition: {
           ...updatedRequiredFields.condition,
-          currentValue: [updatedRequiredFields.condition.currentValue] // Wrap in array
+          currentValue: [updatedRequiredFields.condition.currentValue]
         }
       },
       preservedFields: {
@@ -217,9 +228,8 @@ export default function EnterSpecs() {
       },
       specs: {
         ...clubData.specs
-        // pingDotColor is already in specs from earlier update
       },
-      inventory: inventoryUpdateData // Add inventory data to clubData
+      inventory: inventoryUpdateData
     })
 
     navigate('/submission-details');
@@ -435,6 +445,61 @@ export default function EnterSpecs() {
             />
           </div>
         </section>
+
+        {/* <section className="formSection">
+          <h3 className="sectionTitle">Shaft and Grip Suggestions</h3>
+          <div className="formField">
+            <label htmlFor="shaft_make_model" className="formLabel">
+              SHAFT MAKE & MODEL:
+            </label>
+            <div className="inputGroup">
+              <input
+                type="text"
+                id="shaft_make_model"
+                name="shaft_make_model"
+                value={formData.shaft_make_model || ''}
+                onChange={handleInputChange}
+                className="formInput"
+                placeholder="Enter shaft make and model"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveSuggestion('shaft_make_model')
+                  setSelectedMaker(null)
+                }}
+                className="suggestionTrigger"
+              >
+                Show Common Options
+              </button>
+            </div>
+            {activeSuggestion === 'shaft_make_model' && (
+              <SpecSuggestions
+                type="shaft"
+                currentValue={formData.shaft_make_model}
+                onSelect={(type, value) => handleSuggestionSelect('shaft_make_model', type, value)}
+                maker={selectedMaker}
+              />
+            )}
+          </div>
+
+          <div className="formField">
+            <label htmlFor="grip_make_model_size" className="formLabel">
+              GRIP MAKE, MODEL & SIZE:
+            </label>
+            <div className="inputGroup">
+              <input
+                type="text"
+                id="grip_make_model_size"
+                name="grip_make_model_size"
+                value={formData.grip_make_model_size || ''}
+                onChange={handleInputChange}
+                className="formInput"
+                placeholder="Enter grip make, model, and size"
+              />
+            </div>
+          </div>
+        </section> */}
 
         <button type="submit" className="submitButton">
           Review And Upload

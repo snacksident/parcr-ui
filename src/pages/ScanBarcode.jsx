@@ -8,7 +8,7 @@ const baseUrl = 'https://parcr-backend.onrender.com/api'
 
 export default function ScanBarcode() {
   const navigate = useNavigate()
-  const { updateClubData } = useClubData()
+  const { resetClubData, updateClubData } = useClubData()
   const [manualSKU, setManualSKU] = useState('')
   const [error, setError] = useState(null)
   const [showModal, setShowModal] = useState(false)
@@ -55,6 +55,17 @@ export default function ScanBarcode() {
     }
   };
 
+  const handleScan = async (data) => {
+    if (data) {
+      resetClubData() // Reset all data before starting new scan
+      try {
+        await getProductTemplate(data)
+      } catch (error) {
+        console.error('Error processing scan:', error)
+      }
+    }
+  }
+
   return (
     <div style={{ 
       height: '100vh',
@@ -73,7 +84,7 @@ export default function ScanBarcode() {
         background: 'black',
         maxHeight: 'calc(100vh - 180px)' // Leave space for header and button
       }}>
-        <NewBarcodeScanner onSave={handleSave} />
+        <NewBarcodeScanner onSave={handleScan} />
         {error && <p style={{ color: 'red' }}>{error}</p>}
       </div>
 

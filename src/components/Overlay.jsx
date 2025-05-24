@@ -14,7 +14,7 @@ export default function Overlay() {
   } else if (overlayType === 'Wedges') {
     overlayType = 'wedge'
   } else if (overlayType === 'Putters') {
-    overlayType = clubData.specs?.putterType === 'Blade' ? 'putterMallet' : 'putter'
+    overlayType = clubData.specs?.putterType === 'mallet' ? 'putterMallet' : 'putter'
   } else if (overlayType === 'Hybrids') {
     overlayType = 'Hybrids'
   } else if (overlayType === 'Drivers') {

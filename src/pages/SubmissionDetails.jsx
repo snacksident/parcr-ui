@@ -1,47 +1,38 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useClubData } from '../context/GlobalStateContext'
 import { transformDataForShopify } from '../utils/shopifyTransformer'
-import { createProduct, addMetafields, uploadImages } from '../utils/apiService'
+import { createProduct, addMetafields, uploadImages, getRecommendedPrice } from '../utils/apiService'
 import ProductSection from '../components/ProductSection'
 import '../App.css'
 
-const baseUrl = 'https://parcr-backend.onrender.com/api'
-
-// Modify the base64ToFile utility function at the top
-const base64ToFile = (base64String, index) => {
-  try {
-    // Remove data URL prefix if present
-    const base64WithPrefix = base64String.startsWith('data:image/')
-      ? base64String
-      : `data:image/jpeg;base64,${base64String}`
-
-    // Extract actual base64 data
-    const base64Data = base64WithPrefix.split(',')[1]
-    
-    // Convert base64 to blob
-    const byteString = atob(base64Data)
-    const ab = new ArrayBuffer(byteString.length)
-    const ia = new Uint8Array(ab)
-    
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i)
-    }
-    
-    const blob = new Blob([ab], { type: 'image/jpeg' });
-    return new File([blob], `image${index}.jpg`, { type: 'image/jpeg' })
-  } catch (error) {
-    console.error('Error converting base64 to file:', error)
-    throw error
-  }
-}
-
 export default function SubmissionDetails() {
   const navigate = useNavigate()
-  const { clubData, resetClubData } = useClubData()
+  const { clubData, updateClubData, resetClubData } = useClubData()
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState(null)
   const [uploadStatus, setUploadStatus] = useState('')
+
+  useEffect(() => {
+    // const fetchRecommendedPrice = async () => {
+    //   try {
+    //     const condition = clubData.requiredFields.condition.currentValue
+    //     const price = await getRecommendedPrice(clubData.sku, condition)
+        
+    //     updateClubData({
+    //       ...clubData,
+    //       recommendedPrice: price
+    //     })
+    //   } catch (error) {
+    //     console.error('Failed to fetch recommended price:', error)
+    //     setError('Failed to fetch recommended price')
+    //   }
+    // }
+
+    // if (clubData.sku && !clubData.recommendedPrice) {
+    //   fetchRecommendedPrice()
+    // }
+  }, [clubData.sku])
 
   const handleCreateListing = async () => {
     try {
@@ -67,12 +58,12 @@ export default function SubmissionDetails() {
 
       if (clubData.images?.length > 0) {
         setUploadStatus('Uploading images...')
-        await uploadImages(productId, clubData.images, base64ToFile)
+        await uploadImages(productId, clubData.images)
       }
 
       setUploadStatus('Success!')
       alert('Listing created successfully!')
-      resetClubData()
+      resetClubData() // Reset after successful creation
       navigate('/scan')
     } catch (error) {
       console.error('Error in product creation:', error)
@@ -114,7 +105,8 @@ export default function SubmissionDetails() {
           'Type': clubData.productType,
           'Manufacturer': clubData.manufacturer,
           'Model': clubData.model,
-          'Handedness': clubData.specs?.handedness
+          'Handedness': clubData.specs?.handedness,
+          ...(clubData.recommendedPrice ? { 'Recommended Price': `$${clubData.recommendedPrice.toFixed(2)}` } : {})
         }}
       />
 
