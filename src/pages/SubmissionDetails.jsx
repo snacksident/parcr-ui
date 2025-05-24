@@ -94,11 +94,11 @@ export default function SubmissionDetails() {
 
   const generateTitle = () => {
     try {
-      const shopifyData = transformDataForShopify()
+      const shopifyData = transformDataForShopify(clubData)
       return shopifyData.title;
     } catch (error) {
       console.error('Error generating title:', error)
-      return 'Error generating title'
+      return 'Title will be generated on submission'
     }
   }
 
@@ -109,7 +109,7 @@ export default function SubmissionDetails() {
       <ProductSection 
         title="Product Information"
         clubData={{
-          'Generated Title': generateTitle(),
+          ...(generateTitle() ? { 'Generated Title': generateTitle() } : {}),
           'SKU': clubData.sku,
           'Type': clubData.productType,
           'Manufacturer': clubData.manufacturer,

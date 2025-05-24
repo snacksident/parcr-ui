@@ -1,12 +1,23 @@
-export const createMetafields = (clubData) => {
-  const metafields = [];
+const generateCustomLabel = (clubData) => {
+  // Create components in exact order without spaces
+  const components = [
+    clubData.sku,                                             // e.g., "4ping4"
+    clubData.requiredFields.trade_in_condition?.currentValue, // e.g., "B"
+    clubData.requiredFields.custom_label?.currentValue,       // e.g., "12341234"
+    clubData.requiredFields.location_tag?.currentValue,       // e.g., "IO3"
+    clubData.inventory?.quantity?.toString()                  // e.g., "1"
+  ]
   
-  // Add SKU/custom label
-  const customLabel = [
-    clubData.sku,
-    clubData.requiredFields.custom_label?.currentValue,
-    clubData.requiredFields.location_tag?.currentValue
-  ].filter(Boolean).join(' ');
+  return components
+    .filter(Boolean)  // Remove any null/undefined/empty values
+    .join('')        // Join without spaces
+}
+
+export const createMetafields = (clubData) => {
+  const metafields = []
+  
+  // Use the helper function
+  const customLabel = generateCustomLabel(clubData)
 
   if (customLabel) {
     metafields.push({
@@ -14,7 +25,7 @@ export const createMetafields = (clubData) => {
       value: customLabel,
       type: 'single_line_text_field',
       namespace: 'custom'
-    });
+    })
   }
 
   // Add preserved fields
@@ -22,7 +33,7 @@ export const createMetafields = (clubData) => {
     manufacturer: 'club_manufacturer',
     golfClubType: 'golf_club_type',
     model: 'model'
-  };
+  }
 
   Object.entries(preservedFieldMappings).forEach(([key, metafieldKey]) => {
     if (clubData.preservedFields?.[key]) {
@@ -31,9 +42,9 @@ export const createMetafields = (clubData) => {
         value: clubData.preservedFields[key],
         type: 'single_line_text_field',
         namespace: 'custom'
-      });
+      })
     }
-  });
+  })
 
   // Add required fields
   Object.entries(clubData.requiredFields || {}).forEach(([key, field]) => {
@@ -43,18 +54,17 @@ export const createMetafields = (clubData) => {
         value: field.currentValue,
         type: 'single_line_text_field',
         namespace: 'custom'
-      });
+      })
     }
-  });
+  })
 
   // Add specs and additional fields
   const additionalFields = {
     handedness: clubData.specs?.handedness,
     additional_notes: clubData.preservedFields.additionalNotes,
     club_manufacturer: clubData.manufacturer,
-    model: clubData.model,
-    custom_label: customLabel
-  };
+    model: clubData.model
+  }
 
   Object.entries(additionalFields).forEach(([key, value]) => {
     if (value) {
@@ -63,16 +73,16 @@ export const createMetafields = (clubData) => {
         value,
         type: 'single_line_text_field',
         namespace: 'custom'
-      });
+      })
     }
-  });
+  })
 
-  return metafields;
-};
+  return metafields
+}
 
 export const transformDataForShopify = (clubData) => {
   if (!clubData.requiredFields) {
-    throw new Error('No specification data available');
+    throw new Error('No specification data available')
   }
 
   // Build title components
@@ -86,17 +96,13 @@ export const transformDataForShopify = (clubData) => {
     clubData.requiredFields.item_length?.currentValue ? 
       `${clubData.requiredFields.item_length.currentValue}"` : null,
     clubData.requiredFields.condition?.currentValue,
-  ].filter(Boolean);
+  ].filter(Boolean)
 
   // Get metafields
-  const metafields = createMetafields(clubData);
+  const metafields = createMetafields(clubData)
 
-  // Create custom label
-  const customLabel = [
-    clubData.sku,
-    clubData.requiredFields.custom_label?.currentValue,
-    clubData.requiredFields.location_tag?.currentValue
-  ].filter(Boolean).join(' ');
+  // Use the same helper function for consistency
+  const customLabel = generateCustomLabel(clubData)
 
   return {
     title: titleComponents.join(' '),
@@ -116,5 +122,5 @@ export const transformDataForShopify = (clubData) => {
       name: 'Condition',
       values: [clubData.requiredFields.condition?.currentValue]
     }]
-  };
-};
+  }
+}

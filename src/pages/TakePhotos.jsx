@@ -32,6 +32,27 @@ export default function TakePhotos() {
     return typesWithHeadcovers.includes(type?.toLowerCase())
   }
 
+  // Add this helper function near the top of the file after the initial imports
+  const getMaxSteps = (productType, hasHeadcover) => {
+    const baseSteps = (() => {
+      switch (productType?.toLowerCase()) {
+        case 'drivers':
+        case 'fairway woods':
+        case 'hybrids':
+        case 'wedges':
+        case 'putters':
+        case 'individual irons':
+          return 10
+        case 'iron sets':
+          return 11
+        default:
+          return 10 // fallback
+      }
+    })()
+
+    return hasHeadcover ? baseSteps + 1 : baseSteps
+  }
+
   // Update handlers to use context
   const handleHandednessSelect = (handedness) => {
     updateClubData({
@@ -116,15 +137,15 @@ export default function TakePhotos() {
     setCapturedImage(null)
   }
 
+  // Then modify the handleAccept function to use this new logic:
   const handleAccept = () => {
     const updatedImages = [...(clubData.images || []), capturedImage]
-    const baseSteps = clubData.productType?.toLowerCase() === 'putters' ? 3 : 8
-    const maxSteps = hasHeadcover ? baseSteps + 1 : baseSteps
+    const maxSteps = getMaxSteps(clubData.productType, hasHeadcover)
     
     updateClubData({
       ...clubData,
       images: updatedImages,
-      currentStep: clubData.currentStep + 1 // Increment step in context
+      currentStep: clubData.currentStep + 1
     })
     
     setCapturedImage(null)
@@ -283,14 +304,11 @@ export default function TakePhotos() {
           >
             <Overlay /> {/* Overlay now gets step from context */}
           </CameraView>
+          {/* Update the step counter display in the render section
+          Replace the existing step counter with: */}
           <p style={{ textAlign: 'center' }}>
-            Step {clubData.currentStep} of {
-              clubData.productType?.toLowerCase() === 'putters' 
-                ? (hasHeadcover ? '4' : '3')
-                : (hasHeadcover ? '9' : '8')
-            }
-            {clubData.currentStep === (clubData.productType?.toLowerCase() === 'putters' ? 4 : 9) && 
-              hasHeadcover && ' (Headcover Photo)'}
+            Step {clubData.currentStep} of {getMaxSteps(clubData.productType, hasHeadcover)}
+            {hasHeadcover && clubData.currentStep === getMaxSteps(clubData.productType, hasHeadcover) && ' (Headcover Photo)'}
           </p>
         </>
       ) : (

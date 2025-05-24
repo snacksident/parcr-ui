@@ -1,33 +1,36 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useClubData } from '../context/GlobalStateContext';
-import { pingDotColors } from '../components/DotColorPrompt';
-import PromptModal from '../components/PromptModal';
+import React, { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useClubData } from '../context/GlobalStateContext'
+import { pingDotColors } from '../components/DotColorPrompt'
+import PromptModal from '../components/PromptModal'
 import { 
   clubTypeConfig, 
   flexOptions, 
   shaftMaterials, 
   conditionOptions 
-} from '../config/clubTypeConfig';
-import '../App.css';
+} from '../config/clubTypeConfig'
+import '../App.css'
 
 export default function EnterSpecs() {
-  const navigate = useNavigate();
-  const { clubData, updateClubData, updateSpecs, userData } = useClubData();
-  const [formData, setFormData] = useState({});
-  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false);
+  const navigate = useNavigate()
+  const { clubData, updateClubData, updateSpecs, userData } = useClubData()
+  const [formData, setFormData] = useState({})
+  const [showDotColorPrompt, setShowDotColorPrompt] = useState(false)
+  const [inventoryData, setInventoryData] = useState({
+    quantity: 1
+  })
 
   // Get filtered club numbers based on product type
   const clubNumbers = useMemo(() => {
-    const productType = clubData.productType;
+    const productType = clubData.productType
     
     // Find matching club type configuration
     const matchingType = Object.entries(clubTypeConfig).find(([type]) => 
       productType.toLowerCase().includes(type.toLowerCase())
-    );
+    )
 
-    return matchingType ? matchingType[1].numbers : [];
-  }, [clubData.productType]);
+    return matchingType ? matchingType[1].numbers : []
+  }, [clubData.productType])
 
   const fieldOrder = [
     'club_number',
@@ -36,9 +39,11 @@ export default function EnterSpecs() {
     'shaft_make_model',
     'grip_make_model_size',
     'item_length',
+    'bounce',
+    'loft',
     'custom_label',
     'initials_staff_use_only_'
-  ];
+  ]
 
   useEffect(() => {
     if (clubData?.requiredFields) {
@@ -46,16 +51,16 @@ export default function EnterSpecs() {
       const initialFormData = Object.entries(clubData.requiredFields)
         .reduce((acc, [key, field]) => {
           // Skip the regular 'initials' field
-          if (key === 'initials') return acc;
+          if (key === 'initials') return acc
           
           return {
             ...acc,
             [key]: field?.currentValue === 'COMING SOON' ? '' : field?.currentValue || ''
-          };
-        }, {});
+          }
+        }, {})
 
       // Set the staff initials field with userData.initials
-      initialFormData.initials_staff_use_only_ = userData.initials;
+      initialFormData.initials_staff_use_only_ = userData.initials
       
       console.log('Initial Form Data:', initialFormData)
       setFormData(initialFormData)
@@ -68,13 +73,13 @@ export default function EnterSpecs() {
          clubData.productType === 'Iron Set' || 
          clubData.productType?.toUpperCase().includes('WEDGE'))
       ) {
-        setShowDotColorPrompt(true);
+        setShowDotColorPrompt(true)
       }
     }
-  }, [clubData.requiredFields, userData.initials]); // Change dependency to only requiredFields
+  }, [clubData.requiredFields, userData.initials]) // Change dependency to only requiredFields
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -90,7 +95,7 @@ export default function EnterSpecs() {
     })
 
     // Update the additional notes to include dot color information
-    const additionalNotes = formData.additional_notes || '';
+    const additionalNotes = formData.additional_notes || ''
     const dotColorNote = `PING DOT COLOR: ${dot.color} (${dot.angle} - ${dot.description})`
     
     setFormData(prev => ({
@@ -177,7 +182,7 @@ export default function EnterSpecs() {
         type: 'single_line_text_field',
         namespace: 'custom',
         currentValue: formData.location_tag
-      };
+      }
     }
 
     // Update the condition metafield in the submitForm function
@@ -186,9 +191,17 @@ export default function EnterSpecs() {
       type: 'list.single_line_text_field', // Change the type here
       namespace: 'custom',
       currentValue: formData.condition || 'BRAND NEW' // This value will be wrapped in an array
-    };
+    }
 
-    // When updating clubData, we need to ensure the condition is in array format
+    // Create inventory update data
+    const inventoryUpdateData = {
+      sku: clubData.sku,
+      customLabel: formData.custom_label || '',
+      locationTag: formData.location_tag || '',
+      quantity: inventoryData.quantity
+    }
+
+    // When updating clubData, include inventory data
     updateClubData({
       ...clubData,
       requiredFields: {
@@ -205,37 +218,38 @@ export default function EnterSpecs() {
       specs: {
         ...clubData.specs
         // pingDotColor is already in specs from earlier update
-      }
-    });
+      },
+      inventory: inventoryUpdateData // Add inventory data to clubData
+    })
 
     navigate('/submission-details');
-  };
+  }
 
   // Update the renderRequiredFields function
   const renderRequiredFields = () => {
-    if (!clubData?.requiredFields) return null;
+    if (!clubData?.requiredFields) return null
 
     return fieldOrder
       .filter(key => {
-        if (key === 'handedness' || key === 'initials') return false;
-        if (key === 'club_number' && clubNumbers.length === 0) return false;
-        return clubData.requiredFields[key];
+        if (key === 'handedness' || key === 'initials') return false
+        if (key === 'club_number' && clubNumbers.length === 0) return false
+        return clubData.requiredFields[key]
       })
       .map(key => {
-        const field = clubData.requiredFields[key];
-        if (!field) return null;
+        const field = clubData.requiredFields[key]
+        if (!field) return null
 
-        const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase();
+        const displayLabel = field.key ? field.key.replace(/_/g, ' ').toUpperCase() : key.replace(/_/g, ' ').toUpperCase()
         const shouldUseSelect = (
           key === 'club_number' || 
           key === 'flex' || 
           key === 'shaft_material'
-        );
+        )
         
         const options = key === 'club_number' ? clubNumbers : 
                        key === 'flex' ? flexOptions :
                        key === 'shaft_material' ? shaftMaterials : 
-                       null;
+                       null
 
         return (
           <div key={key} className="formField">
@@ -271,8 +285,8 @@ export default function EnterSpecs() {
               />
             )}
           </div>
-        );
-      });
+        )
+      })
   }
 
   if (!clubData?.requiredFields || Object.keys(clubData.requiredFields).length === 0) {
@@ -281,7 +295,7 @@ export default function EnterSpecs() {
         <h1>No Template Found</h1>
         <p>Please scan a valid club barcode first.</p>
       </div>
-    );
+    )
   }
 
   return (
@@ -357,6 +371,31 @@ export default function EnterSpecs() {
               className="formInput"
             />
           </div>
+
+          <div className="formField">
+            <label htmlFor="trade_in_condition" className="formLabel">
+              TRADE-IN CONDITION:
+            </label>
+            <input
+              type="text"
+              id="trade_in_condition"
+              name="trade_in_condition"
+              value={formData.trade_in_condition || ''}
+              onChange={(e) => {
+                // Only allow single letter input
+                const value = e.target.value.slice(0, 1).toUpperCase()
+                handleInputChange({
+                  target: {
+                    name: 'trade_in_condition',
+                    value
+                  }
+                })
+              }}
+              maxLength={1}
+              className="formInput"
+              required
+            />
+          </div>
         </section>
 
         <section className="formSection">
@@ -376,10 +415,31 @@ export default function EnterSpecs() {
           </div>
         </section>
 
+        <section className="formSection">
+          <h3 className="sectionTitle">Inventory Details</h3>
+          <div className="formField">
+            <label htmlFor="quantity" className="formLabel">
+              QUANTITY:
+            </label>
+            <input
+              type="number"
+              id="quantity"
+              name="quantity"
+              min="1"
+              value={inventoryData.quantity}
+              onChange={(e) => setInventoryData(prev => ({
+                ...prev,
+                quantity: parseInt(e.target.value) || 1
+              }))}
+              className="formInput"
+            />
+          </div>
+        </section>
+
         <button type="submit" className="submitButton">
           Review And Upload
         </button>
       </form>
     </div>
-  );
+  )
 }
